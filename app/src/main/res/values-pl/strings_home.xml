@@ -10,6 +10,7 @@
     <string name="home_clock_tap_open_app">Otwórz aplikację…</string>
     <string name="home_clock_tap_picker_title">Kliknięcie zegara otwiera</string>
     <string name="home_clock_tap_alarms">Alarmy</string>
+    <string name="home_clock_tap_alarms_failed">Nie udało się otworzyć alarmów</string>
     <string name="home_clock_tap_calendar">Kalendarz</string>
     <string name="home_clock_tap_screen_time">Czas przed ekranem</string>
     <string name="home_clock_tap_battery">Bateria</string>

@@ -24,6 +24,8 @@
     <!-- Title of the app list reached from "Open an app…". -->
     <string name="home_clock_tap_picker_title">Tap on the clock opens</string>
     <string name="home_clock_tap_alarms">Alarms</string>
+    <!-- Toast when the phone's clock app refuses or is missing. -->
+    <string name="home_clock_tap_alarms_failed">Could not open alarms</string>
     <string name="home_clock_tap_calendar">Calendar</string>
     <string name="home_clock_tap_screen_time">Screen time</string>
     <string name="home_clock_tap_battery">Battery</string>
