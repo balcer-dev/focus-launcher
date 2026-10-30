@@ -305,6 +305,9 @@ fun HomeScreen(
         val favoriteSize = (fit.textSp * settings.favoriteSize.scale).sp
         val favoritePadding = fit.padDp.dp
 
+        // Behind everything else and under the system bars; draws nothing unless one is chosen.
+        HomeWallpaper(settings)
+
         Column(
             Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 18.dp),
             horizontalAlignment = settings.homeAlign.horizontal(),

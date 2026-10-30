@@ -79,6 +79,16 @@ data class Settings(
     val textScale: Float = 1f,
     val hideStatusBar: Boolean = false,
     val launchAnimation: LaunchAnimation = LaunchAnimation.FAST,
+    /** A picture of the user's choice behind the home screen ([WallpaperStore]); the app list and settings stay plain. */
+    val showWallpaper: Boolean = false,
+    /**
+     * When the current picture was chosen (ms), so the home screen knows to load it again; 0 = none.
+     * The picture itself is a private file, not a setting: restored on another phone, this points
+     * at nothing and the home screen has no wallpaper.
+     */
+    val wallpaperStamp: Long = 0L,
+    /** How much of the picture shows through the theme's black or white, in percent. */
+    val wallpaperVisibility: Int = 40,
 
     // Home
     val clockStyle: ClockStyle = ClockStyle.SPLIT,
@@ -170,6 +180,9 @@ data class Settings(
         put("textScale", textScale.toDouble())
         put("hideStatusBar", hideStatusBar)
         put("launchAnimation", launchAnimation.name)
+        put("showWallpaper", showWallpaper)
+        put("wallpaperStamp", wallpaperStamp)
+        put("wallpaperVisibility", wallpaperVisibility)
 
         put("clockStyle", clockStyle.name)
         put("splitSide", splitSide.name)
@@ -242,6 +255,9 @@ data class Settings(
                     .let { if (it.isNaN()) d.textScale else it.coerceIn(0.8f, 1.4f) },
                 hideStatusBar = o.optBoolean("hideStatusBar", d.hideStatusBar),
                 launchAnimation = enumOr(o.optString("launchAnimation"), d.launchAnimation),
+                showWallpaper = o.optBoolean("showWallpaper", d.showWallpaper),
+                wallpaperStamp = o.optLong("wallpaperStamp", d.wallpaperStamp).coerceAtLeast(0L),
+                wallpaperVisibility = o.optInt("wallpaperVisibility", d.wallpaperVisibility).coerceIn(10, 100),
 
                 // Schema 2 made the split clock the default, at the owner's request. A ring stored by an
                 // older version was the old default, not a choice, so it moves along once; the ring stays

@@ -2,7 +2,10 @@ package com.focus.launcher.ui.settings
 
 import com.focus.launcher.ui.home.MusicAppPicker
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
@@ -19,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,6 +45,7 @@ import com.focus.launcher.data.SHORTCUT_PHONE
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.SplitSide
 import com.focus.launcher.data.TimeFormat
+import com.focus.launcher.data.WallpaperStore
 import com.focus.launcher.ui.components.AppPickerDialog
 import com.focus.launcher.ui.components.ChoiceDialog
 import com.focus.launcher.ui.components.FocusDialog
@@ -54,6 +59,9 @@ import com.focus.launcher.ui.home.shortcutLabel
 import com.focus.launcher.ui.launchApp
 import com.focus.launcher.ui.theme.LocalFocusColors
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private fun update(transform: (Settings) -> Settings) = Graph.settings.update(transform)
 
@@ -375,7 +383,7 @@ internal fun HiddenAppsPage(settings: Settings, apps: List<AppEntry>, onBack: ()
 
 // ---- Appearance ------------------------------------------------------------------------------
 
-private enum class LookDialog { NONE, THEME, FONT, SIZE, LAUNCH }
+private enum class LookDialog { NONE, THEME, FONT, SIZE, LAUNCH, WALLPAPER }
 
 private val TEXT_SIZES = listOf(
     0.9f to R.string.settings_text_size_small,
@@ -384,10 +392,42 @@ private val TEXT_SIZES = listOf(
     1.2f to R.string.settings_text_size_larger,
 )
 
+/** How much of the wallpaper shows, in percent. None at all is what switching it off is for. */
+private val WALLPAPER_LEVELS = (10..100 step 10).toList()
+
 @Composable
 internal fun AppearancePage(settings: Settings, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val res = LocalResources.current
+    val scope = rememberCoroutineScope()
     var dialog by remember { mutableStateOf(LookDialog.NONE) }
     val close = { dialog = LookDialog.NONE }
+
+    // The photo picker needs no storage permission. The picture is copied into the app's own
+    // files, so it stays when the original is deleted.
+    var copying by remember { mutableStateOf(false) }
+    val hasWallpaper = remember(settings.wallpaperStamp) { settings.wallpaperStamp != 0L && WallpaperStore.exists(context) }
+    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult // the picker was closed
+        copying = true
+        scope.launch {
+            // The setting changes on the worker too: leaving this page mid-copy must not lose the picture.
+            val result = withContext(Dispatchers.IO) {
+                WallpaperStore.import(context, uri).also { imported ->
+                    if (imported is WallpaperStore.Import.Ok) update { it.copy(showWallpaper = true, wallpaperStamp = imported.stamp) }
+                }
+            }
+            copying = false
+            if (result is WallpaperStore.Import.Failed) Toast.makeText(context, res.getString(result.messageRes), Toast.LENGTH_LONG).show()
+        }
+    }
+    val pickWallpaper: () -> Unit = {
+        try {
+            wallpaperPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, res.getString(R.string.settings_wallpaper_no_picker), Toast.LENGTH_LONG).show()
+        }
+    }
 
     Page(stringResource(R.string.settings_appearance), onBack) {
         Section(stringResource(R.string.settings_black_and_white))
@@ -415,10 +455,53 @@ internal fun AppearancePage(settings: Settings, onBack: () -> Unit) {
             stringResource(R.string.settings_hide_status_bar), settings.hideStatusBar,
             subtitle = stringResource(R.string.settings_hide_status_bar_summary),
         ) { v -> update { it.copy(hideStatusBar = v) } }
+
+        Section(stringResource(R.string.settings_wallpaper))
+        // Off while there is no picture to show, also when a restored backup says on.
+        ToggleRow(
+            stringResource(R.string.settings_wallpaper_show), settings.showWallpaper && hasWallpaper,
+            subtitle = stringResource(R.string.settings_wallpaper_show_summary),
+        ) { v -> if (v && !hasWallpaper) pickWallpaper() else update { it.copy(showWallpaper = v) } }
+        SettingRow(
+            stringResource(R.string.settings_wallpaper_picture),
+            subtitle = stringResource(R.string.settings_wallpaper_picture_summary),
+            value = stringResource(
+                when {
+                    copying -> R.string.settings_wallpaper_copying
+                    hasWallpaper -> R.string.settings_wallpaper_chosen
+                    else -> R.string.settings_none
+                },
+            ),
+            enabled = !copying,
+            onClick = pickWallpaper,
+        )
+        SettingRow(
+            stringResource(R.string.settings_wallpaper_visibility),
+            subtitle = stringResource(R.string.settings_wallpaper_visibility_summary),
+            value = stringResource(R.string.settings_percent, settings.wallpaperVisibility),
+            enabled = settings.showWallpaper && hasWallpaper,
+            onClick = { dialog = LookDialog.WALLPAPER },
+        )
+        SettingRow(
+            stringResource(R.string.settings_wallpaper_remove),
+            enabled = hasWallpaper && !copying,
+            onClick = {
+                scope.launch {
+                    val removed = withContext(Dispatchers.IO) { WallpaperStore.remove(context) }
+                    update { it.copy(showWallpaper = false, wallpaperStamp = 0L) }
+                    if (!removed) Toast.makeText(context, res.getString(R.string.settings_wallpaper_remove_failed), Toast.LENGTH_LONG).show()
+                }
+            },
+        )
     }
 
     when (dialog) {
         LookDialog.NONE -> Unit
+        LookDialog.WALLPAPER -> ChoiceDialog(
+            stringResource(R.string.settings_wallpaper_visibility),
+            WALLPAPER_LEVELS.map { it to stringResource(R.string.settings_percent, it) },
+            settings.wallpaperVisibility, close,
+        ) { v -> update { it.copy(wallpaperVisibility = v) } }
         LookDialog.THEME -> ChoiceDialog(
             stringResource(R.string.settings_theme),
             listOf(true to stringResource(R.string.settings_theme_black), false to stringResource(R.string.settings_theme_white)),

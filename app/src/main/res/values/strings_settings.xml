@@ -27,7 +27,7 @@
     <string name="settings_gestures">Gestures</string>
     <string name="settings_gestures_summary">Swipes, double tap, keyboard in the drawer</string>
     <string name="settings_appearance">Appearance</string>
-    <string name="settings_appearance_summary">Black or white, typeface, text size</string>
+    <string name="settings_appearance_summary">Black or white, typeface, text size, wallpaper</string>
     <!-- Section header over app timers and the weekly review: the features that help you focus. -->
     <string name="settings_section_focus">Focus</string>
     <string name="settings_app_timers">App timers</string>
@@ -202,6 +202,26 @@
     <string name="settings_opening_apps_summary">Fast puts the app over the whole screen from its first frame. System default uses your phone\'s own animation.</string>
     <string name="settings_hide_status_bar">Hide the status bar</string>
     <string name="settings_hide_status_bar_summary">No notification icons on the home screen. Swipe down from the top edge to peek.</string>
+    <string name="settings_wallpaper">Wallpaper</string>
+    <string name="settings_wallpaper_show">Show on the home screen</string>
+    <string name="settings_wallpaper_show_summary">A picture of your choice behind the home screen. The app list stays plain.</string>
+    <string name="settings_wallpaper_picture">Picture</string>
+    <string name="settings_wallpaper_picture_summary">Pick one from your photos. Focus keeps its own copy.</string>
+    <!-- Value of the Picture row: a picture is chosen / it is being copied right now. -->
+    <string name="settings_wallpaper_chosen">Chosen</string>
+    <string name="settings_wallpaper_copying">Copying…</string>
+    <string name="settings_wallpaper_visibility">Visibility</string>
+    <string name="settings_wallpaper_visibility_summary">How much of the picture shows. Less keeps the text easier to read.</string>
+    <!-- A share in percent, such as "40%". -->
+    <string name="settings_percent">%1$d%%</string>
+    <string name="settings_wallpaper_remove">Remove wallpaper</string>
+    <!-- Toasts after picking a picture for the wallpaper, or removing it. -->
+    <string name="settings_wallpaper_no_picker">No app on this phone can pick a picture</string>
+    <string name="settings_wallpaper_read_failed">Could not open that picture</string>
+    <string name="settings_wallpaper_unreadable">That file is not a picture Focus can read</string>
+    <string name="settings_wallpaper_too_large">That picture is too large</string>
+    <string name="settings_wallpaper_save_failed">Could not save the picture</string>
+    <string name="settings_wallpaper_remove_failed">Could not delete the picture</string>
 
     <!-- Gestures -->
     <string name="settings_gestures_note">Swiping left always opens the app drawer, and a long-press on empty space opens these settings.</string>

@@ -25,7 +25,7 @@
     <string name="settings_gestures">Gesty</string>
     <string name="settings_gestures_summary">Przesunięcia, dwukrotne kliknięcie, klawiatura na liście aplikacji</string>
     <string name="settings_appearance">Wygląd</string>
-    <string name="settings_appearance_summary">Czerń lub biel, krój pisma, rozmiar tekstu</string>
+    <string name="settings_appearance_summary">Czerń lub biel, krój pisma, rozmiar tekstu, tapeta</string>
     <string name="settings_section_focus">Skupienie</string>
     <string name="settings_app_timers">Minutniki aplikacji</string>
     <string name="settings_app_timers_summary">Dzienne limity, które blokują media społecznościowe i gry</string>
@@ -182,6 +182,23 @@
     <string name="settings_opening_apps_summary">Szybkie: aplikacja zajmuje cały ekran od pierwszej klatki. Domyślne systemowe: animacja twojego telefonu.</string>
     <string name="settings_hide_status_bar">Ukryj pasek stanu</string>
     <string name="settings_hide_status_bar_summary">Bez ikon powiadomień na ekranie głównym. Przesuń w dół od górnej krawędzi, żeby zerknąć.</string>
+    <string name="settings_wallpaper">Tapeta</string>
+    <string name="settings_wallpaper_show">Pokazuj na ekranie głównym</string>
+    <string name="settings_wallpaper_show_summary">Wybrany obraz w tle ekranu głównego. Lista aplikacji zostaje bez niego.</string>
+    <string name="settings_wallpaper_picture">Obraz</string>
+    <string name="settings_wallpaper_picture_summary">Wybierz ze swoich zdjęć. Focus zachowuje własną kopię.</string>
+    <string name="settings_wallpaper_chosen">Wybrany</string>
+    <string name="settings_wallpaper_copying">Kopiowanie…</string>
+    <string name="settings_wallpaper_visibility">Widoczność</string>
+    <string name="settings_wallpaper_visibility_summary">Jak mocno widać obraz. Im mniej, tym czytelniejszy tekst.</string>
+    <string name="settings_percent">%1$d%%</string>
+    <string name="settings_wallpaper_remove">Usuń tapetę</string>
+    <string name="settings_wallpaper_no_picker">Na tym telefonie nie ma aplikacji do wyboru zdjęć</string>
+    <string name="settings_wallpaper_read_failed">Nie udało się otworzyć tego obrazu</string>
+    <string name="settings_wallpaper_unreadable">Focus nie umie odczytać tego pliku jako obrazu</string>
+    <string name="settings_wallpaper_too_large">Ten obraz jest za duży</string>
+    <string name="settings_wallpaper_save_failed">Nie udało się zapisać obrazu</string>
+    <string name="settings_wallpaper_remove_failed">Nie udało się usunąć obrazu</string>
 
     <!-- Gesty -->
     <string name="settings_gestures_note">Przesunięcie w lewo zawsze otwiera listę aplikacji, a przytrzymanie pustego miejsca – te ustawienia.</string>

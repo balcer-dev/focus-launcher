@@ -9,9 +9,14 @@ import androidx.compose.foundation.layout.offset
 import com.focus.launcher.Graph
 import com.focus.launcher.R
 import com.focus.launcher.data.AppEntry
+import com.focus.launcher.data.WallpaperStore
 import com.focus.launcher.ui.components.AppPickerDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -505,6 +510,34 @@ fun ScreenTimeLine(today: DayUsage?, hasAccess: Boolean, align: Alignment.Horizo
         } else {
             T(stringResource(R.string.home_allow_usage_access), size = 14.sp, color = c.dim, maxLines = 1)
         }
+    }
+}
+
+/**
+ * The picture chosen for the home screen ([WallpaperStore]), laid over the theme's background at
+ * [Settings.wallpaperVisibility], so it fades towards black or white and the text stays readable.
+ * A single draw with its own alpha: the pager's per-draw fade between pages still adds up right.
+ * Nothing at all while it is off, or when the picture is missing (a backup restored on another
+ * phone) or cannot be read.
+ */
+@Composable
+fun HomeWallpaper(settings: Settings) {
+    val context = LocalContext.current
+    val image by produceState<ImageBitmap?>(null, settings.showWallpaper, settings.wallpaperStamp) {
+        value = if (settings.showWallpaper && settings.wallpaperStamp != 0L) {
+            withContext(Dispatchers.IO) { WallpaperStore.load(context) }?.asImageBitmap()
+        } else {
+            null
+        }
+    }
+    image?.let {
+        Image(
+            it,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alpha = settings.wallpaperVisibility / 100f,
+        )
     }
 }
 

@@ -57,9 +57,16 @@ class SettingsMigrationTest {
             pinned = listOf("com.maps/.Main#10", "com.mail/.Main"),
             renames = mapOf("com.mail/.Main" to "Mail"), appLimits = mapOf("com.video" to 20),
             showNote = true, note = "Call mum", showSeconds = true, favoriteSize = FavoriteSize.SMALL,
+            showWallpaper = true, wallpaperStamp = 1_761_900_000_000L, wallpaperVisibility = 60,
         )
         val file = s.toJson().toString(2)
         assertEquals(s, Settings.fromBackup(JSONObject(file)))
+    }
+
+    @Test fun `a wallpaper is off unless chosen, and a hand-edited visibility stays in range`() {
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("showWallpaper") }).showWallpaper)
+        assertEquals(10, Settings.fromJson(Settings().toJson().put("wallpaperVisibility", -5)).wallpaperVisibility)
+        assertEquals(0L, Settings.fromJson(Settings().toJson().put("wallpaperStamp", -1L)).wallpaperStamp)
     }
 
     @Test fun `pinned apps keep the order they were pinned in, once each`() {
