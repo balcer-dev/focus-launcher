@@ -69,7 +69,7 @@ const val TAP_NOTHING = "tap:none"
 /**
  * Every user-facing preference of the launcher. Immutable; changed through [SettingsStore.update].
  *
- * App references ([favorites], [hidden], [renames], shortcuts) use [AppEntry.key].
+ * App references ([favorites], [hidden], [pinned], [renames], shortcuts) use [AppEntry.key].
  * Timers ([appLimits]) are keyed by package name because usage is tracked per package.
  */
 data class Settings(
@@ -125,6 +125,8 @@ data class Settings(
     val showUsageInDrawer: Boolean = true,
     val drawerSort: DrawerSort = DrawerSort.ALPHA,
     val hidden: Set<String> = emptySet(),
+    /** Apps listed above all others in the app list, in the order they were pinned. */
+    val pinned: List<String> = emptyList(),
     val renames: Map<String, String> = emptyMap(),
 
     // App timers
@@ -199,6 +201,7 @@ data class Settings(
         put("showUsageInDrawer", showUsageInDrawer)
         put("drawerSort", drawerSort.name)
         put("hidden", JSONArray(hidden.toList()))
+        put("pinned", JSONArray(pinned))
         put("renames", JSONObject(renames))
 
         put("timersEnabled", timersEnabled)
@@ -281,6 +284,7 @@ data class Settings(
                 showUsageInDrawer = o.optBoolean("showUsageInDrawer", d.showUsageInDrawer),
                 drawerSort = enumOr(o.optString("drawerSort"), d.drawerSort),
                 hidden = o.optJSONArray("hidden").strings().toSet(),
+                pinned = o.optJSONArray("pinned").strings().distinct(),
                 renames = o.optJSONObject("renames").stringMap(),
 
                 timersEnabled = o.optBoolean("timersEnabled", d.timersEnabled),

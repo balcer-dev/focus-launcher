@@ -56,6 +56,7 @@ fun AppMenu(
     val favorites = settings.favorites.filter { key -> installed.any { it.key == key } }
     val isFavorite = app.key in favorites
     val isHidden = app.key in settings.hidden
+    val isPinned = app.key in settings.pinned
     val limit = Graph.limits.limitFor(app.packageName, settings)
     val used = today?.perApp?.get(app.packageName)
 
@@ -94,6 +95,11 @@ fun AppMenu(
                             onDismiss()
                         }
                     }
+                }
+                MenuRow(stringResource(if (isPinned) R.string.menu_unpin else R.string.menu_pin)) {
+                    // Dropping the key first keeps it from appearing twice; a new pin goes last.
+                    Graph.settings.update { s -> s.copy(pinned = (s.pinned - app.key).let { if (isPinned) it else it + app.key }) }
+                    onDismiss()
                 }
                 if (Graph.apps.canLimit(app.packageName)) {
                     MenuRow(

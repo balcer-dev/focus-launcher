@@ -7,6 +7,7 @@
     <string name="drawer_tab_work">Służbowe</string>
     <string name="drawer_sort_current">Sortuj: %1$s</string>
     <string name="drawer_sort_title">Sortuj aplikacje</string>
+    <string name="drawer_pinned">Przypięte</string>
     <string name="drawer_recent_installs">Zainstalowane w ciągu doby</string>
     <string name="drawer_all_apps">Wszystkie aplikacje</string>
     <string name="drawer_loading">Wczytywanie…</string>
@@ -22,6 +23,8 @@
     <string name="menu_fast_apps_add">Dodaj do szybkich aplikacji</string>
     <string name="menu_fast_apps_remove">Usuń z szybkich aplikacji</string>
     <string name="menu_toast_on_home_screen">%1$s jest na ekranie głównym</string>
+    <string name="menu_pin">Przypnij na górze listy</string>
+    <string name="menu_unpin">Odepnij z góry listy</string>
     <string name="menu_app_timer">Minutnik aplikacji</string>
     <string name="menu_timer_per_day">%1$s dziennie</string>
     <string name="menu_timer_off">Wyłączony</string>

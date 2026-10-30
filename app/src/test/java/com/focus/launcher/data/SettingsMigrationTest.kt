@@ -1,5 +1,6 @@
 package com.focus.launcher.data
 
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -53,11 +54,18 @@ class SettingsMigrationTest {
     @Test fun `a backup file brings every setting back`() {
         val s = Settings(
             favorites = listOf("com.mail/.Main", "com.maps/.Main#10"), hidden = setOf("com.game/.Main"),
+            pinned = listOf("com.maps/.Main#10", "com.mail/.Main"),
             renames = mapOf("com.mail/.Main" to "Mail"), appLimits = mapOf("com.video" to 20),
             showNote = true, note = "Call mum", showSeconds = true, favoriteSize = FavoriteSize.SMALL,
         )
         val file = s.toJson().toString(2)
         assertEquals(s, Settings.fromBackup(JSONObject(file)))
+    }
+
+    @Test fun `pinned apps keep the order they were pinned in, once each`() {
+        val stored = Settings().toJson().put("pinned", JSONArray(listOf("com.b/.Main", "com.a/.Main", "", "com.b/.Main")))
+        assertEquals(listOf("com.b/.Main", "com.a/.Main"), Settings.fromJson(stored).pinned)
+        assertEquals(emptyList<String>(), Settings.fromJson(Settings().toJson().apply { remove("pinned") }).pinned)
     }
 
     @Test fun `a file that is not a backup is refused`() {

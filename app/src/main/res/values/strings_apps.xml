@@ -15,6 +15,7 @@
     <string name="drawer_sort_current">Sort: %1$s</string>
     <string name="drawer_sort_title">Sort apps</string>
     <!-- Section titles in the list, shown in small capitals. -->
+    <string name="drawer_pinned">Pinned</string>
     <string name="drawer_recent_installs">Installed in the last 24 hours</string>
     <string name="drawer_all_apps">All apps</string>
     <string name="drawer_loading">Loading…</string>
@@ -35,6 +36,9 @@
     <string name="menu_fast_apps_remove">Remove from fast apps</string>
     <!-- Toast. %1$s is the app's name. -->
     <string name="menu_toast_on_home_screen">%1$s is on your home screen</string>
+    <!-- Pinned apps come first in the app list, above the sorted rest. -->
+    <string name="menu_pin">Pin to top of app list</string>
+    <string name="menu_unpin">Unpin from top of app list</string>
     <string name="menu_app_timer">App timer</string>
     <!-- Value next to "App timer". %1$s is the daily limit, e.g. "30m". -->
     <string name="menu_timer_per_day">%1$s a day</string>

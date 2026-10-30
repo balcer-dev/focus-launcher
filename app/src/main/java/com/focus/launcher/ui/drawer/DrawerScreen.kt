@@ -83,10 +83,10 @@ import java.text.Normalizer
 private const val DAY_MS = 86_400_000L
 
 /**
- * Page two of the launcher: a search bar, the apps installed in the last 24 hours, and every app
- * as a plain list. With a work profile the list splits into Personal / Work tabs; "Sort" orders it
- * A–Z, by most used or by last used. Search always covers both profiles. No icons anywhere.
- * Long-press a row for its menu.
+ * Page two of the launcher: a search bar, the pinned apps, the apps installed in the last 24 hours,
+ * and every other app as a plain list. With a work profile the list splits into Personal / Work tabs;
+ * "Sort" orders it A–Z, by most used or by last used, below the pinned apps. Search always covers
+ * both profiles and ranks by match, pinned or not. No icons anywhere. Long-press a row for its menu.
  */
 @Composable
 fun DrawerScreen(
@@ -148,23 +148,35 @@ fun DrawerScreen(
             DrawerSort.RECENT -> inProfile.sortedByDescending { if (it.isWorkProfile) 0L else stats[it.packageName]?.second ?: 0L }
         }
     }
-    // Search ignores tab and sort: it looks through both profiles and ranks by match.
-    val results = remember(visible, sorted, query, searchNames) {
-        if (query.isBlank()) sorted else searchApps(visible, query, searchNames)
+    // Pinned apps of this tab, in the order they were pinned. Keys of apps that are gone or hidden find nothing.
+    val pinnedApps = remember(inProfile, settings.pinned) {
+        val byKey = inProfile.associateBy { it.key }
+        settings.pinned.mapNotNull { byKey[it] }
     }
-    val recent = remember(inProfile, settings.showRecentInstalls) {
+    // Search ignores tab, sort and pins: it looks through both profiles and ranks by match.
+    // Without a query the list is everything not already pinned above it.
+    val results = remember(visible, sorted, settings.pinned, query, searchNames) {
+        if (query.isBlank()) sorted.filter { it.key !in settings.pinned } else searchApps(visible, query, searchNames)
+    }
+    val recent = remember(inProfile, settings.showRecentInstalls, settings.pinned) {
         if (!settings.showRecentInstalls) emptyList()
         else {
             val cutoff = System.currentTimeMillis() - DAY_MS
-            inProfile.filter { it.firstInstallTime >= cutoff && it.packageName != Graph.app.packageName }
+            inProfile.filter { it.firstInstallTime >= cutoff && it.packageName != Graph.app.packageName && it.key !in settings.pinned }
                 .sortedByDescending { it.firstInstallTime }
         }
     }
-    // Number of list items that come before the alphabetical block (section labels + recent apps).
-    val leadingItems = if (!searching && recent.isNotEmpty()) recent.size + 2 else 0
+    // Pinned and recent apps come under their own labels; "All apps" then opens the main list, if anything is left for it.
+    val allAppsLabel = !searching && results.isNotEmpty() && (pinnedApps.isNotEmpty() || recent.isNotEmpty())
+    // Number of list items that come before the alphabetical block (section labels, pinned and recent apps).
+    val leadingItems = if (searching) 0 else {
+        (if (pinnedApps.isNotEmpty()) pinnedApps.size + 1 else 0) +
+            (if (recent.isNotEmpty()) recent.size + 1 else 0) +
+            (if (allAppsLabel) 1 else 0)
+    }
     // Letters only mean something in an alphabetical list.
-    val letters = remember(sorted, sort, leadingItems) {
-        if (sort == DrawerSort.ALPHA) letterIndex(sorted, leadingItems) else emptyList()
+    val letters = remember(results, sort, leadingItems, searching) {
+        if (sort == DrawerSort.ALPHA && !searching) letterIndex(results, leadingItems) else emptyList()
     }
 
     // The keyboard only ever opens on purpose: by the "open right away" setting, by swiping up on
@@ -182,7 +194,8 @@ fun DrawerScreen(
         }
     }
     // stats is a key too: when it arrives the list reorders, and a keyed list would follow the old top row.
-    LaunchedEffect(query, workTab, sort, stats) { listState.scrollToItem(0) }
+    // So are the pins: a new one lands at the very top, which a keyed list would otherwise scroll past.
+    LaunchedEffect(query, workTab, sort, stats, settings.pinned) { listState.scrollToItem(0) }
     // Optional: open the app as soon as the search narrows down to exactly one.
     LaunchedEffect(results, query) {
         if (settings.autoLaunch && isActive && query.trim().length >= 2 && results.size == 1) onLaunch(results[0])
@@ -255,17 +268,26 @@ fun DrawerScreen(
             val showIndex = !searching && sort == DrawerSort.ALPHA && letters.size > 5 && maxHeight > (letters.size * 15).dp
 
             LazyColumn(Modifier.fillMaxSize(), state = listState) {
+                if (!searching && pinnedApps.isNotEmpty()) {
+                    item(key = "label:pinned") { SectionLabel(stringResource(R.string.drawer_pinned)) }
+                    items(pinnedApps, key = { "pinned:" + it.key }) { app ->
+                        AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                    }
+                }
                 if (!searching && recent.isNotEmpty()) {
-                    item(key = "label:recent") { SectionLabel(stringResource(R.string.drawer_recent_installs)) }
+                    item(key = "label:recent") { SectionLabel(stringResource(R.string.drawer_recent_installs), top = if (pinnedApps.isNotEmpty()) 22 else 10) }
                     items(recent, key = { "recent:" + it.key }) { app ->
                         AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
                     }
+                }
+                if (allAppsLabel) {
                     item(key = "label:all") { SectionLabel(stringResource(R.string.drawer_all_apps), top = 22) }
                 }
                 items(results, key = { it.key }) { app ->
                     AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
                 }
-                if (results.isEmpty()) {
+                // With every app of the tab pinned the main list is empty, but the drawer is not.
+                if (results.isEmpty() && (searching || pinnedApps.isEmpty())) {
                     item(key = "empty") {
                         T(
                             if (!loaded) stringResource(R.string.drawer_loading)
