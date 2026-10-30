@@ -23,6 +23,8 @@ import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -36,6 +38,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
@@ -48,11 +51,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -91,6 +96,7 @@ import com.focus.launcher.ui.components.monochrome
 import com.focus.launcher.ui.components.press
 import com.focus.launcher.ui.launchOptions
 import com.focus.launcher.ui.theme.LocalFocusColors
+import com.focus.launcher.ui.theme.LocalTextScale
 import com.focus.launcher.util.Perms
 import java.time.LocalDate
 
@@ -450,17 +456,26 @@ fun HomeScreen(
 
             // Corner shortcuts
             if (settings.showShortcuts) {
+                // As tall as a line of the corner text, and scaled with it.
+                val iconSize = with(LocalDensity.current) { (20f * LocalTextScale.current).sp.toDp() }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     for (left in listOf(true, false)) {
                         val spec = if (left) settings.leftShortcut else settings.rightShortcut
-                        T(
-                            shortcutLabel(spec, apps),
-                            Modifier
-                                .tipTarget(tip == Tip.CORNERS, c.fg)
-                                .press(onLongClick = { Graph.state.did(Tip.CORNERS); editingShortcut = left }) { launchShortcut(context, spec, apps, onLaunch) }
-                                .padding(vertical = 14.dp, horizontal = 12.dp),
-                            size = 15.sp, color = c.dim, maxLines = 1,
-                        )
+                        val corner = Modifier
+                            .tipTarget(tip == Tip.CORNERS, c.fg)
+                            .press(onLongClick = { Graph.state.did(Tip.CORNERS); editingShortcut = left }) { launchShortcut(context, spec, apps, onLaunch) }
+                            .padding(vertical = 14.dp, horizontal = 12.dp)
+                        val icon = shortcutIcon(spec)
+                        if (icon != null) {
+                            Image(
+                                painterResource(icon),
+                                contentDescription = shortcutLabel(spec, apps),
+                                modifier = corner.size(iconSize),
+                                colorFilter = ColorFilter.tint(c.dim),
+                            )
+                        } else {
+                            T(shortcutLabel(spec, apps), corner, size = 15.sp, color = c.dim, maxLines = 1)
+                        }
                     }
                 }
             } else {
@@ -639,6 +654,14 @@ private fun FavoriteRow(
         // Same marker as in the drawer, sized with the name next to it.
         if (app.isWorkProfile) WorkBadge(Modifier.padding(start = 10.dp), side = (size.value * 0.62f).dp)
     }
+}
+
+/** The phone and camera corners are recognised by their shape; any other app keeps its name. */
+@DrawableRes
+private fun shortcutIcon(spec: String): Int? = when (spec) {
+    SHORTCUT_PHONE -> R.drawable.ic_shortcut_phone
+    SHORTCUT_CAMERA -> R.drawable.ic_shortcut_camera
+    else -> null
 }
 
 private fun launchShortcut(context: Context, spec: String, apps: List<AppEntry>, onLaunch: (AppEntry) -> Unit) {
