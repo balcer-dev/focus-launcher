@@ -234,7 +234,9 @@ data class Settings(
             return Settings(
                 dark = o.optBoolean("dark", d.dark),
                 font = enumOr(o.optString("font"), d.font),
-                textScale = o.optDouble("textScale", d.textScale.toDouble()).toFloat().coerceIn(0.8f, 1.4f),
+                // A hand-edited backup can hold "NaN", which coerceIn would let through.
+                textScale = o.optDouble("textScale", d.textScale.toDouble()).toFloat()
+                    .let { if (it.isNaN()) d.textScale else it.coerceIn(0.8f, 1.4f) },
                 hideStatusBar = o.optBoolean("hideStatusBar", d.hideStatusBar),
                 launchAnimation = enumOr(o.optString("launchAnimation"), d.launchAnimation),
 
@@ -303,6 +305,16 @@ data class Settings(
                 swipeRightApp = o.optString("swipeRightApp", d.swipeRightApp),
                 doubleTapLock = o.optBoolean("doubleTapLock", d.doubleTapLock),
             )
+        }
+
+        /**
+         * Settings from a backup file written from [toJson], or null when [o] is not one. A backup from a
+         * newer [SCHEMA] is refused too: this version could misread its values.
+         */
+        fun fromBackup(o: JSONObject): Settings? {
+            // Every backup has these; a JSON file of anything else almost surely lacks them.
+            if (o.optInt("v", -1) !in 1..SCHEMA || !o.has("dark") || !o.has("favorites")) return null
+            return fromJson(o)
         }
 
         private inline fun <reified E : Enum<E>> enumOr(name: String?, fallback: E): E =

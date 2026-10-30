@@ -31,7 +31,23 @@
     <string name="settings_app_timers_summary">Dzienne limity, które blokują media społecznościowe i gry</string>
     <string name="settings_weekly_review">Podsumowanie tygodnia</string>
     <string name="settings_weekly_review_summary">Spojrzenie wstecz na koniec każdego tygodnia</string>
+    <string name="settings_section_backup">Kopia zapasowa</string>
+    <string name="settings_backup_export">Zapisz ustawienia do pliku</string>
+    <string name="settings_backup_export_summary">Wszystkie ustawienia w jednym pliku, na zapas albo na nowy telefon</string>
+    <string name="settings_backup_import">Przywróć ustawienia z pliku</string>
+    <string name="settings_backup_import_summary">Zastąp obecne ustawienia zapisanymi wcześniej</string>
     <string name="settings_about">O aplikacji</string>
+
+    <!-- Kopia zapasowa ustawień -->
+    <string name="settings_backup_restore_title">Przywrócić ustawienia?</string>
+    <string name="settings_backup_restore_message">Każde ustawienie zostanie zastąpione tym z pliku. Uprawnienia i historia czasu przed ekranem zostają bez zmian.</string>
+    <string name="settings_backup_restore_confirm">Przywróć</string>
+    <string name="settings_backup_restored">Ustawienia przywrócone</string>
+    <string name="settings_backup_saved">Ustawienia zapisane</string>
+    <string name="settings_backup_save_failed">Nie udało się zapisać ustawień</string>
+    <string name="settings_backup_read_failed">Nie udało się odczytać pliku</string>
+    <string name="settings_backup_invalid">Ten plik nie jest kopią ustawień Focus</string>
+    <string name="settings_backup_newer">Ta kopia pochodzi z nowszej wersji Focus</string>
 
     <!-- O aplikacji -->
     <string name="settings_about_welcome">Ekran powitalny i wskazówki</string>

@@ -27,6 +27,12 @@ class SettingsStore(context: Context) {
         prefs.edit { putString(KEY, next.toJson().toString()) }
     }
 
+    /**
+     * Every setting as indented JSON, for a backup file; read back with [Settings.fromBackup].
+     * Permissions and screen time history are not settings, so they stay out of it.
+     */
+    fun exportBackup(): String = value.toJson().toString(2)
+
     private fun load(): Settings {
         val raw = prefs.getString(KEY, null) ?: return Settings()
         return try {

@@ -2,6 +2,7 @@ package com.focus.launcher.data
 
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
@@ -47,5 +48,24 @@ class SettingsMigrationTest {
 
     @Test fun `an unknown stored value falls back to the default`() {
         assertEquals(SplitSide.CALENDAR, Settings.fromJson(stored(version = 2, style = "SPLIT").put("splitSide", "MAIL")).splitSide)
+    }
+
+    @Test fun `a backup file brings every setting back`() {
+        val s = Settings(
+            favorites = listOf("com.mail/.Main", "com.maps/.Main#10"), hidden = setOf("com.game/.Main"),
+            renames = mapOf("com.mail/.Main" to "Mail"), appLimits = mapOf("com.video" to 20),
+            showNote = true, note = "Call mum", showSeconds = true, favoriteSize = FavoriteSize.SMALL,
+        )
+        val file = s.toJson().toString(2)
+        assertEquals(s, Settings.fromBackup(JSONObject(file)))
+    }
+
+    @Test fun `a file that is not a backup is refused`() {
+        assertNull(Settings.fromBackup(JSONObject("""{"name": "something else", "v": 1}""")))
+        assertNull(Settings.fromBackup(Settings().toJson().apply { remove("v") }))
+    }
+
+    @Test fun `a backup from a newer schema is refused`() {
+        assertNull(Settings.fromBackup(Settings().toJson().put("v", Settings.SCHEMA + 1)))
     }
 }

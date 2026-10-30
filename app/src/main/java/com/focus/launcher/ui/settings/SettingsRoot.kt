@@ -1,7 +1,13 @@
 package com.focus.launcher.ui.settings
 
+import android.content.ContentResolver
 import android.content.Context
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -26,10 +32,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,12 +51,20 @@ import com.focus.launcher.Graph
 import com.focus.launcher.R
 import com.focus.launcher.data.CalendarRepository
 import com.focus.launcher.data.Settings
+import com.focus.launcher.ui.components.ConfirmDialog
 import com.focus.launcher.ui.components.Label
 import com.focus.launcher.ui.components.SettingRow
 import com.focus.launcher.ui.components.T
 import com.focus.launcher.ui.components.VSpace
 import com.focus.launcher.ui.theme.LocalFocusColors
 import com.focus.launcher.util.Perms
+import java.io.ByteArrayOutputStream
+import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONException
+import org.json.JSONObject
 
 /** Snapshot of the system switches Focus depends on; re-read whenever settings come back on screen. */
 data class SetupStatus(
@@ -113,6 +129,29 @@ fun SettingsRoot(settings: Settings, startRoute: String?, onExit: () -> Unit) {
     }
     val apps by Graph.apps.apps.collectAsStateWithLifecycle()
 
+    // Backup to a file the user picks (Storage Access Framework), so no storage permission is needed.
+    val res = LocalResources.current
+    val scope = rememberCoroutineScope()
+    var toRestore by remember { mutableStateOf<Settings?>(null) }
+    val exportPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult // the picker was closed
+        val json = Graph.settings.exportBackup()
+        scope.launch {
+            val saved = withContext(Dispatchers.IO) { writeBackup(context.contentResolver, uri, json) }
+            val message = if (saved) R.string.settings_backup_saved else R.string.settings_backup_save_failed
+            Toast.makeText(context, res.getString(message), Toast.LENGTH_SHORT).show()
+        }
+    }
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            when (val read = withContext(Dispatchers.IO) { readBackup(context.contentResolver, uri) }) {
+                is BackupRead.Ok -> toRestore = read.settings // replaced only once the user confirms
+                is BackupRead.Failed -> Toast.makeText(context, res.getString(read.messageRes), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     // Going deeper slides in from the right, going back from the left; both with a short fade.
     AnimatedContent(
         targetState = stack.size to stack.last(),
@@ -143,13 +182,37 @@ fun SettingsRoot(settings: Settings, startRoute: String?, onExit: () -> Unit) {
                 stack.remove(Routes.WELCOME)
                 if (toSetup) go(Routes.SETUP) else onExit() // Start: to the home screen, where the tips are
             }
-            else -> MainPage(settings, apps.size, status, back, go)
+            else -> MainPage(
+                settings, apps.size, status, back, go,
+                onExport = { exportPicker.launch("focus-settings-${LocalDate.now()}.json") },
+                // Some file managers report a .json file as plain text or as bare bytes; the content is checked anyway.
+                onImport = { importPicker.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+            )
+        }
+    }
+    toRestore?.let { restored ->
+        ConfirmDialog(
+            title = stringResource(R.string.settings_backup_restore_title),
+            message = stringResource(R.string.settings_backup_restore_message),
+            confirmLabel = stringResource(R.string.settings_backup_restore_confirm),
+            onDismiss = { toRestore = null },
+        ) {
+            Graph.settings.update { restored }
+            Toast.makeText(context, res.getString(R.string.settings_backup_restored), Toast.LENGTH_SHORT).show()
         }
     }
 }
 
 @Composable
-private fun MainPage(settings: Settings, appCount: Int, status: SetupStatus, onBack: () -> Unit, go: (String) -> Unit) {
+private fun MainPage(
+    settings: Settings,
+    appCount: Int,
+    status: SetupStatus,
+    onBack: () -> Unit,
+    go: (String) -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+) {
     Page(stringResource(R.string.app_name), onBack) {
         VSpace(6.dp)
         SettingRow(
@@ -181,6 +244,9 @@ private fun MainPage(settings: Settings, appCount: Int, status: SetupStatus, onB
             value = stringResource(if (settings.weeklyEnabled) R.string.settings_on else R.string.settings_off),
             onClick = { go(Routes.WEEKLY) },
         )
+        Section(stringResource(R.string.settings_section_backup))
+        SettingRow(stringResource(R.string.settings_backup_export), subtitle = stringResource(R.string.settings_backup_export_summary), onClick = onExport)
+        SettingRow(stringResource(R.string.settings_backup_import), subtitle = stringResource(R.string.settings_backup_import_summary), onClick = onImport)
         Section("")
         SettingRow(stringResource(R.string.settings_about), onClick = { go(Routes.ABOUT) })
     }
@@ -219,6 +285,59 @@ private fun AboutPage(onBack: () -> Unit, go: (String) -> Unit) {
             }
         }
     }
+}
+
+// ---- settings backup -------------------------------------------------------------------------
+
+/** Real backups are a few kilobytes; a bigger file is not one, and is not read into memory. */
+private const val BACKUP_MAX_BYTES = 1024 * 1024
+
+/** What came of reading a backup file the user picked. */
+private sealed interface BackupRead {
+    class Ok(val settings: Settings) : BackupRead
+    class Failed(@StringRes val messageRes: Int) : BackupRead
+}
+
+/** Writes [json] to the picked document; false when that failed. The provider is another app, so it may throw anything. */
+private fun writeBackup(resolver: ContentResolver, uri: Uri, json: String): Boolean {
+    return try {
+        // "wt" truncates: a backup saved over a longer, older file leaves no tail of it behind.
+        val stream = resolver.openOutputStream(uri, "wt") ?: return false
+        stream.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+        true
+    } catch (_: Exception) {
+        false
+    }
+}
+
+/** Reads and checks a backup; the current settings are not touched here. */
+private fun readBackup(resolver: ContentResolver, uri: Uri): BackupRead {
+    val text = try {
+        resolver.openInputStream(uri)?.use { input ->
+            val out = ByteArrayOutputStream()
+            val buffer = ByteArray(8 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                if (out.size() + count > BACKUP_MAX_BYTES) return BackupRead.Failed(R.string.settings_backup_invalid)
+                out.write(buffer, 0, count)
+            }
+            out.toByteArray().decodeToString()
+        }
+    } catch (_: Exception) {
+        null // the provider is another app and may throw anything
+    } ?: return BackupRead.Failed(R.string.settings_backup_read_failed)
+
+    val settings = try {
+        val json = JSONObject(text)
+        if (json.optInt("v", -1) > Settings.SCHEMA) return BackupRead.Failed(R.string.settings_backup_newer)
+        Settings.fromBackup(json)
+    } catch (_: JSONException) {
+        null
+    } catch (_: StackOverflowError) {
+        null // absurdly deep nesting in a crafted file
+    } ?: return BackupRead.Failed(R.string.settings_backup_invalid)
+    return BackupRead.Ok(settings)
 }
 
 // ---- shared page scaffolding -----------------------------------------------------------------

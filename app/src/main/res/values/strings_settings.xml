@@ -34,7 +34,24 @@
     <string name="settings_app_timers_summary">Daily limits that lock social apps and games</string>
     <string name="settings_weekly_review">Weekly review</string>
     <string name="settings_weekly_review_summary">A look back at the end of every week</string>
+    <!-- Section header over saving all settings to a file and restoring them from one. -->
+    <string name="settings_section_backup">Backup</string>
+    <string name="settings_backup_export">Save settings to a file</string>
+    <string name="settings_backup_export_summary">All settings in one file, to keep or take to a new phone</string>
+    <string name="settings_backup_import">Restore settings from a file</string>
+    <string name="settings_backup_import_summary">Replace these settings with ones saved earlier</string>
     <string name="settings_about">About</string>
+
+    <!-- Settings backup: the confirmation before restoring, and toasts after saving or reading a file. -->
+    <string name="settings_backup_restore_title">Restore settings?</string>
+    <string name="settings_backup_restore_message">Every setting is replaced with the one in the file. Permissions and screen time history stay as they are.</string>
+    <string name="settings_backup_restore_confirm">Restore</string>
+    <string name="settings_backup_restored">Settings restored</string>
+    <string name="settings_backup_saved">Settings saved</string>
+    <string name="settings_backup_save_failed">Could not save the settings</string>
+    <string name="settings_backup_read_failed">Could not read the file</string>
+    <string name="settings_backup_invalid">This file is not a Focus settings backup</string>
+    <string name="settings_backup_newer">This backup comes from a newer version of Focus</string>
 
     <!-- About -->
     <string name="settings_about_welcome">Welcome screen and tips</string>
