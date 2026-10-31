@@ -112,7 +112,8 @@ fun VSpace(height: Dp) = Spacer(Modifier.height(height))
 @Composable
 fun HSpace(width: Dp) = Spacer(Modifier.width(width))
 
-private val GREYSCALE = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+/** Turns whatever is drawn with it grey: colour emoji in [monochrome], app icons in the drawer's grid view. */
+internal val GREYSCALE = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
 
 /**
  * Drains the colour out of whatever it is applied to. Text is already black or white; this is for

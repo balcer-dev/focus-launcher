@@ -166,6 +166,8 @@
     <string name="settings_auto_launch">Otwórz, gdy zostanie jedna</string>
     <string name="settings_auto_launch_summary">Uruchamia aplikację, gdy tylko wyszukiwanie pasuje do jednej.</string>
     <string name="settings_list">Lista</string>
+    <string name="settings_drawer_layout">Układ</string>
+    <string name="settings_drawer_layout_summary">Siatka: cztery aplikacje w rzędzie, każda z małą szarą ikoną.</string>
     <string name="settings_recent_installs">Ostatnio zainstalowane</string>
     <string name="settings_recent_installs_summary">Aplikacje zainstalowane w ciągu ostatnich 24 godzin, na górze.</string>
     <string name="settings_drawer_usage">Pokazuj postęp minutników</string>

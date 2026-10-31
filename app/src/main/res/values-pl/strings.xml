@@ -85,6 +85,8 @@
     <string name="favorite_size_small">Mały</string>
     <string name="favorite_size_medium">Średni</string>
     <string name="favorite_size_large">Duży</string>
+    <string name="layout_list">Lista</string>
+    <string name="layout_grid">Siatka z ikonami</string>
 
     <string name="category_social">media społecznościowe</string>
     <string name="category_game">gra</string>

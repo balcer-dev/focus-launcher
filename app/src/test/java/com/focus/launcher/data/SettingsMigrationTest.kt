@@ -97,6 +97,13 @@ class SettingsMigrationTest {
         assertEquals(emptyList<String>(), Settings.fromJson(Settings().toJson().apply { remove("pinned") }).pinned)
     }
 
+    @Test fun `the app list stays a list unless the grid was chosen`() {
+        assertEquals(DrawerLayout.LIST, Settings.fromJson(Settings().toJson().apply { remove("drawerLayout") }).drawerLayout)
+        assertEquals(DrawerLayout.LIST, Settings.fromJson(Settings().toJson().put("drawerLayout", "TILES")).drawerLayout)
+        val s = Settings(drawerLayout = DrawerLayout.GRID)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `a file that is not a backup is refused`() {
         assertNull(Settings.fromBackup(JSONObject("""{"name": "something else", "v": 1}""")))
         assertNull(Settings.fromBackup(Settings().toJson().apply { remove("v") }))

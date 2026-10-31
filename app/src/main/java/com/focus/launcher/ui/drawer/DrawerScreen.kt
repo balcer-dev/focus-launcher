@@ -3,6 +3,7 @@ package com.focus.launcher.ui.drawer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -27,6 +29,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
@@ -45,8 +53,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -54,15 +64,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focus.launcher.Graph
 import com.focus.launcher.R
 import com.focus.launcher.data.AppEntry
 import com.focus.launcher.data.DayUsage
+import com.focus.launcher.data.DrawerLayout
 import com.focus.launcher.data.DrawerSort
 import com.focus.launcher.data.Settings
 import com.focus.launcher.ui.components.ChoiceDialog
+import com.focus.launcher.ui.components.GREYSCALE
 import com.focus.launcher.ui.components.Label
 import com.focus.launcher.ui.components.T
 import com.focus.launcher.ui.components.TabChip
@@ -82,11 +95,18 @@ import java.text.Normalizer
 
 private const val DAY_MS = 86_400_000L
 
+/** Apps to a row in the grid view. */
+private const val GRID_COLUMNS = 4
+
+/** Icons in the grid view. Not scaled with the text size: the cache holds one size of each. */
+private val ICON_SIZE = 40.dp
+
 /**
  * Page two of the launcher: a search bar, the pinned apps, the apps installed in the last 24 hours,
  * and every other app as a plain list. With a work profile the list splits into Personal / Work tabs;
  * "Sort" orders it A–Z, by most used or by last used, below the pinned apps. Search always covers
- * both profiles and ranks by match, pinned or not. No icons anywhere. Long-press a row for its menu.
+ * both profiles and ranks by match, pinned or not. No icons, unless the grid view is chosen in
+ * settings: the same sections, four apps to a row with small grey icons. Long-press an app for its menu.
  */
 @Composable
 fun DrawerScreen(
@@ -109,7 +129,11 @@ fun DrawerScreen(
     val focusManager = LocalFocusManager.current
     val searchFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
+    val grid = settings.drawerLayout == DrawerLayout.GRID
+    // Only the view on screen is scrolled: the other one's state is not attached to any layout.
+    suspend fun scrollTo(index: Int) = if (grid) gridState.scrollToItem(index) else listState.scrollToItem(index)
 
     val visible = remember(apps, settings.hidden) { apps.filter { it.key !in settings.hidden } }
     // Stripping accents is the expensive part of search; do it once per list, not per keystroke.
@@ -130,8 +154,9 @@ fun DrawerScreen(
     var stats by remember { mutableStateOf<Map<String, Pair<Long, Long>>>(emptyMap()) }
     // Scrolling through the list is browsing, not typing: give the keyboard's half of the screen back.
     val listDragged by listState.interactionSource.collectIsDraggedAsState()
-    LaunchedEffect(listDragged) {
-        if (listDragged) {
+    val gridDragged by gridState.interactionSource.collectIsDraggedAsState()
+    LaunchedEffect(listDragged, gridDragged) {
+        if (listDragged || gridDragged) {
             focusManager.clearFocus()
             keyboard?.hide()
         }
@@ -174,6 +199,13 @@ fun DrawerScreen(
             (if (recent.isNotEmpty()) recent.size + 1 else 0) +
             (if (allAppsLabel) 1 else 0)
     }
+    // With every app of the tab pinned the main list is empty, but the drawer is not.
+    val emptyText = when {
+        results.isNotEmpty() || (!searching && pinnedApps.isNotEmpty()) -> null
+        !loaded -> stringResource(R.string.drawer_loading)
+        searching -> stringResource(R.string.drawer_no_match, query.trim())
+        else -> stringResource(R.string.drawer_no_apps)
+    }
     // Letters only mean something in an alphabetical list.
     val letters = remember(results, sort, leadingItems, searching) {
         if (sort == DrawerSort.ALPHA && !searching) letterIndex(results, leadingItems) else emptyList()
@@ -190,12 +222,13 @@ fun DrawerScreen(
             focusManager.clearFocus()
             keyboard?.hide()
             // Back to the top while nobody is looking, so the next visit starts at A, not where the last one ended.
-            listState.scrollToItem(0)
+            scrollTo(0)
         }
     }
     // stats is a key too: when it arrives the list reorders, and a keyed list would follow the old top row.
     // So are the pins: a new one lands at the very top, which a keyed list would otherwise scroll past.
-    LaunchedEffect(query, workTab, sort, stats, settings.pinned) { listState.scrollToItem(0) }
+    // And the layout: the list and the grid each keep their own position.
+    LaunchedEffect(query, workTab, sort, stats, settings.pinned, grid) { scrollTo(0) }
     // Optional: open the app as soon as the search narrows down to exactly one.
     LaunchedEffect(results, query) {
         if (settings.autoLaunch && isActive && query.trim().length >= 2 && results.size == 1) onLaunch(results[0])
@@ -267,40 +300,38 @@ fun DrawerScreen(
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val showIndex = !searching && sort == DrawerSort.ALPHA && letters.size > 5 && maxHeight > (letters.size * 15).dp
 
-            LazyColumn(Modifier.fillMaxSize(), state = listState) {
-                if (!searching && pinnedApps.isNotEmpty()) {
-                    item(key = "label:pinned") { SectionLabel(stringResource(R.string.drawer_pinned)) }
-                    items(pinnedApps, key = { "pinned:" + it.key }) { app ->
+            if (grid) {
+                AppGrid(gridState, settings, today, pinnedApps, recent, results, allAppsLabel, searching, emptyText, showIndex, onLaunch, onAppMenu)
+            } else {
+                LazyColumn(Modifier.fillMaxSize(), state = listState) {
+                    if (!searching && pinnedApps.isNotEmpty()) {
+                        item(key = "label:pinned") { SectionLabel(stringResource(R.string.drawer_pinned)) }
+                        items(pinnedApps, key = { "pinned:" + it.key }) { app ->
+                            AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                        }
+                    }
+                    if (!searching && recent.isNotEmpty()) {
+                        item(key = "label:recent") { SectionLabel(stringResource(R.string.drawer_recent_installs), top = if (pinnedApps.isNotEmpty()) 22 else 10) }
+                        items(recent, key = { "recent:" + it.key }) { app ->
+                            AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                        }
+                    }
+                    if (allAppsLabel) {
+                        item(key = "label:all") { SectionLabel(stringResource(R.string.drawer_all_apps), top = 22) }
+                    }
+                    items(results, key = { it.key }) { app ->
                         AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
                     }
-                }
-                if (!searching && recent.isNotEmpty()) {
-                    item(key = "label:recent") { SectionLabel(stringResource(R.string.drawer_recent_installs), top = if (pinnedApps.isNotEmpty()) 22 else 10) }
-                    items(recent, key = { "recent:" + it.key }) { app ->
-                        AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                    if (emptyText != null) {
+                        item(key = "empty") {
+                            T(emptyText, Modifier.padding(horizontal = 30.dp, vertical = 20.dp), size = 16.sp, color = c.dim)
+                        }
                     }
-                }
-                if (allAppsLabel) {
-                    item(key = "label:all") { SectionLabel(stringResource(R.string.drawer_all_apps), top = 22) }
-                }
-                items(results, key = { it.key }) { app ->
-                    AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
-                }
-                // With every app of the tab pinned the main list is empty, but the drawer is not.
-                if (results.isEmpty() && (searching || pinnedApps.isEmpty())) {
-                    item(key = "empty") {
-                        T(
-                            if (!loaded) stringResource(R.string.drawer_loading)
-                            else if (searching) stringResource(R.string.drawer_no_match, query.trim())
-                            else stringResource(R.string.drawer_no_apps),
-                            Modifier.padding(horizontal = 30.dp, vertical = 20.dp), size = 16.sp, color = c.dim,
-                        )
-                    }
-                }
-                item(key = "inset") {
-                    Column {
-                        VSpace(24.dp)
-                        Box(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                    item(key = "inset") {
+                        Column {
+                            VSpace(24.dp)
+                            Box(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                        }
                     }
                 }
             }
@@ -313,14 +344,15 @@ fun DrawerScreen(
                         .fillMaxHeight()
                         .width(34.dp)
                         .padding(vertical = 6.dp)
-                        .pointerInput(letters) {
+                        // grid is a key too: the jump goes to whichever view is shown.
+                        .pointerInput(letters, grid) {
                             awaitEachGesture {
                                 fun jump(y: Float) {
                                     val i = (y / size.height * letters.size).toInt().coerceIn(0, letters.lastIndex)
                                     val (letter, index) = letters[i]
                                     if (scrubbing != letter) {
                                         scrubbing = letter
-                                        scope.launch { listState.scrollToItem(index) }
+                                        scope.launch { scrollTo(index) }
                                     }
                                 }
                                 val down = awaitFirstDown()
@@ -372,8 +404,8 @@ fun DrawerScreen(
 }
 
 @Composable
-private fun SectionLabel(text: String, top: Int = 10) {
-    Label(text, Modifier.padding(start = 30.dp, end = 30.dp, top = top.dp, bottom = 6.dp))
+private fun SectionLabel(text: String, top: Int = 10, start: Int = 30) {
+    Label(text, Modifier.padding(start = start.dp, end = 30.dp, top = top.dp, bottom = 6.dp))
 }
 
 @Composable
@@ -406,6 +438,140 @@ private fun AppRow(
         if (app.isWorkProfile) WorkBadge()
         if (limit != null && settings.showUsageInDrawer) {
             T(stringResource(R.string.drawer_usage_of_limit, formatDuration(res, used), formatMinutes(res, limit.minutes)), size = 13.sp, color = if (spent) c.faint else c.dim, maxLines = 1)
+        }
+    }
+}
+
+// ---- grid view -------------------------------------------------------------------------------
+
+/**
+ * The grid view: the list's sections in the list's order, item for item, so the A–Z index jumps
+ * to the row of a letter's first app. Labels, the empty note and the bottom inset take a whole row.
+ */
+@Composable
+private fun AppGrid(
+    state: LazyGridState,
+    settings: Settings,
+    today: DayUsage?,
+    pinnedApps: List<AppEntry>,
+    recent: List<AppEntry>,
+    results: List<AppEntry>,
+    allAppsLabel: Boolean,
+    searching: Boolean,
+    emptyText: String?,
+    indexShown: Boolean,
+    onLaunch: (AppEntry) -> Unit,
+    onAppMenu: (AppEntry) -> Unit,
+) {
+    val c = LocalFocusColors.current
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(GRID_COLUMNS),
+        modifier = Modifier.fillMaxSize(),
+        state = state,
+        // Labels and the empty note sit 12dp further in, on the list's 30dp edge. The index takes the right edge.
+        contentPadding = PaddingValues(start = 18.dp, end = if (indexShown) 34.dp else 18.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (!searching && pinnedApps.isNotEmpty()) {
+            item(key = "label:pinned", span = { GridItemSpan(maxLineSpan) }) { SectionLabel(stringResource(R.string.drawer_pinned), start = 12) }
+            items(pinnedApps, key = { "pinned:" + it.key }) { app ->
+                AppTile(app, settings, today, onLaunch, onAppMenu)
+            }
+        }
+        if (!searching && recent.isNotEmpty()) {
+            item(key = "label:recent", span = { GridItemSpan(maxLineSpan) }) {
+                SectionLabel(stringResource(R.string.drawer_recent_installs), top = if (pinnedApps.isNotEmpty()) 22 else 10, start = 12)
+            }
+            items(recent, key = { "recent:" + it.key }) { app ->
+                AppTile(app, settings, today, onLaunch, onAppMenu)
+            }
+        }
+        if (allAppsLabel) {
+            item(key = "label:all", span = { GridItemSpan(maxLineSpan) }) { SectionLabel(stringResource(R.string.drawer_all_apps), top = 22, start = 12) }
+        }
+        items(results, key = { it.key }) { app ->
+            AppTile(app, settings, today, onLaunch, onAppMenu)
+        }
+        if (emptyText != null) {
+            item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                T(emptyText, Modifier.padding(horizontal = 12.dp, vertical = 20.dp), size = 16.sp, color = c.dim)
+            }
+        }
+        item(key = "inset", span = { GridItemSpan(maxLineSpan) }) {
+            Column {
+                VSpace(24.dp)
+                Box(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+            }
+        }
+    }
+}
+
+/** One app of the grid: its icon, its name below, and the timer if the list would show one. */
+@Composable
+private fun AppTile(
+    app: AppEntry,
+    settings: Settings,
+    today: DayUsage?,
+    onLaunch: (AppEntry) -> Unit,
+    onAppMenu: (AppEntry) -> Unit,
+) {
+    val c = LocalFocusColors.current
+    val res = LocalResources.current
+    val limit = remember(app.packageName, settings.appLimits, settings.timersEnabled, settings.socialDefaultMin, settings.gameDefaultMin, settings.videoDefaultMin) {
+        Graph.limits.limitFor(app.packageName, settings)
+    }
+    val used = today?.perApp?.get(app.packageName) ?: 0L
+    val spent = limit != null && used >= limit.millis && !Graph.limits.hasFreePass(app.packageName)
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .press(onLongClick = { onAppMenu(app) }) { onLaunch(app) }
+            .padding(horizontal = 2.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        AppIcon(app, dimmed = spent)
+        VSpace(6.dp)
+        val name = if (hasColourGlyphs(app.label)) Modifier.fillMaxWidth().monochrome() else Modifier.fillMaxWidth()
+        T(app.label, name, size = 13.sp, color = if (spent) c.faint else c.fg, align = TextAlign.Center, maxLines = 1)
+        if (limit != null && settings.showUsageInDrawer) {
+            T(
+                stringResource(R.string.drawer_usage_of_limit, formatDuration(res, used), formatMinutes(res, limit.minutes)),
+                Modifier.fillMaxWidth(), size = 11.sp, color = if (spent) c.faint else c.dim, align = TextAlign.Center, maxLines = 1,
+            )
+        }
+    }
+}
+
+/**
+ * The app's icon in grey, the badged one for a work app, read in the background by [AppIcons].
+ * Until it arrives, or when there is none, its space stays empty; a work app whose icon could not
+ * be read gets the list's work marker there instead.
+ */
+@Composable
+private fun AppIcon(app: AppEntry, dimmed: Boolean) {
+    val sizePx = with(LocalDensity.current) { ICON_SIZE.roundToPx() }
+    // updatedAt is a key too: an updated app can bring a new icon.
+    var icon by remember(app.key, app.updatedAt, sizePx) { mutableStateOf(Graph.icons.cached(app, sizePx)) }
+    var missing by remember(app.key, app.updatedAt, sizePx) { mutableStateOf(false) }
+    LaunchedEffect(app.key, app.updatedAt, sizePx) {
+        if (icon == null) {
+            val loaded = Graph.icons.load(app, sizePx)
+            if (loaded != null) icon = loaded else missing = true
+        }
+    }
+    Box(Modifier.size(ICON_SIZE), contentAlignment = Alignment.Center) {
+        val bitmap = icon
+        if (bitmap != null) {
+            Image(
+                remember(bitmap) { bitmap.asImageBitmap() },
+                contentDescription = null, // the name is right below it
+                modifier = Modifier.fillMaxSize(),
+                alpha = if (dimmed) 0.35f else 1f,
+                colorFilter = GREYSCALE,
+            )
+        } else if (missing && app.isWorkProfile) {
+            WorkBadge(side = 18.dp)
         }
     }
 }

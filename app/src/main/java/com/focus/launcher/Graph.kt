@@ -1,6 +1,7 @@
 package com.focus.launcher
 
 import android.app.Application
+import com.focus.launcher.data.AppIcons
 import com.focus.launcher.data.AppRepository
 import com.focus.launcher.data.AppState
 import com.focus.launcher.data.LimitManager
@@ -25,6 +26,16 @@ object Graph {
     val usage: UsageRepository by lazy { UsageRepository(app) { apps } }
     val limits: LimitManager by lazy { LimitManager(app, settings, apps) }
     val state: AppState by lazy { AppState(app) }
+
+    private val iconsLazy = lazy { AppIcons(app) }
+
+    /** Created on first use: only the optional grid view of the app list loads icons. */
+    val icons: AppIcons by iconsLazy
+
+    /** Empties the icon cache if there is one, without creating it just for that. */
+    fun trimIcons() {
+        if (iconsLazy.isInitialized()) icons.trimMemory()
+    }
 
     fun init(application: Application) {
         app = application

@@ -56,7 +56,10 @@ enum class AppCategory(@StringRes val labelRes: Int) {
     OTHER(R.string.category_other),
 }
 
-/** One launchable activity. Text only: the launcher never loads an icon. */
+/**
+ * One launchable activity. Text only: the scan never loads an icon. App icons are loaded only for
+ * the optional grid view of the app list, by [AppIcons], and only while that view is shown.
+ */
 data class AppEntry(
     /** Stable id used in settings: flattened component, plus "#serial" for work-profile apps. */
     val key: String,

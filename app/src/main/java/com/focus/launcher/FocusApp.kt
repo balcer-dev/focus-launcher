@@ -33,6 +33,7 @@ class FocusApp : Application() {
         if (level >= TRIM_MEMORY_BACKGROUND) {
             Graph.apps.trimMemory()
             Graph.usage.trimMemory()
+            Graph.trimIcons()
             CalendarRepository.invalidate()
         }
     }

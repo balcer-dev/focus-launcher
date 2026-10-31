@@ -39,6 +39,11 @@ enum class DrawerSort(@StringRes val labelRes: Int) {
     ALPHA(R.string.sort_alpha), MOST_USED(R.string.sort_most_used), RECENT(R.string.sort_recent),
 }
 
+/** How the drawer shows the apps. GRID is the only place the launcher loads app icons. */
+enum class DrawerLayout(@StringRes val labelRes: Int) {
+    LIST(R.string.layout_list), GRID(R.string.layout_grid),
+}
+
 enum class TimeFormat(@StringRes val labelRes: Int) {
     SYSTEM(R.string.time_format_system), H24(R.string.time_format_24h), H12(R.string.time_format_12h),
 }
@@ -142,6 +147,8 @@ data class Settings(
     val showRecentInstalls: Boolean = true,
     val showUsageInDrawer: Boolean = true,
     val drawerSort: DrawerSort = DrawerSort.ALPHA,
+    /** LIST is text only. GRID: four apps to a row, each with a small grey icon ([AppIcons]). */
+    val drawerLayout: DrawerLayout = DrawerLayout.LIST,
     val hidden: Set<String> = emptySet(),
     /** Apps listed above all others in the app list, in the order they were pinned. */
     val pinned: List<String> = emptyList(),
@@ -224,6 +231,7 @@ data class Settings(
         put("showRecentInstalls", showRecentInstalls)
         put("showUsageInDrawer", showUsageInDrawer)
         put("drawerSort", drawerSort.name)
+        put("drawerLayout", drawerLayout.name)
         put("hidden", JSONArray(hidden.toList()))
         put("pinned", JSONArray(pinned))
         put("renames", JSONObject(renames))
@@ -320,6 +328,7 @@ data class Settings(
                 showRecentInstalls = o.optBoolean("showRecentInstalls", d.showRecentInstalls),
                 showUsageInDrawer = o.optBoolean("showUsageInDrawer", d.showUsageInDrawer),
                 drawerSort = enumOr(o.optString("drawerSort"), d.drawerSort),
+                drawerLayout = enumOr(o.optString("drawerLayout"), d.drawerLayout),
                 hidden = o.optJSONArray("hidden").strings().toSet(),
                 pinned = o.optJSONArray("pinned").strings().distinct(),
                 renames = o.optJSONObject("renames").stringMap(),

@@ -34,6 +34,7 @@ import com.focus.launcher.data.CALENDAR_ALL
 import com.focus.launcher.data.CalendarInfo
 import com.focus.launcher.data.CalendarRepository
 import com.focus.launcher.data.ClockStyle
+import com.focus.launcher.data.DrawerLayout
 import com.focus.launcher.data.FavoriteSize
 import com.focus.launcher.data.FontChoice
 import com.focus.launcher.data.HomeAlign
@@ -337,6 +338,7 @@ internal fun FastAppsPage(settings: Settings, apps: List<AppEntry>, onBack: () -
 
 @Composable
 internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> Unit) {
+    var layoutDialog by remember { mutableStateOf(false) }
     Page(stringResource(R.string.settings_app_drawer), onBack) {
         Section(stringResource(R.string.settings_search))
         ToggleRow(
@@ -349,6 +351,12 @@ internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> 
         ) { v -> update { it.copy(autoLaunch = v) } }
 
         Section(stringResource(R.string.settings_list))
+        SettingRow(
+            stringResource(R.string.settings_drawer_layout),
+            subtitle = stringResource(R.string.settings_drawer_layout_summary),
+            value = stringResource(settings.drawerLayout.labelRes),
+            onClick = { layoutDialog = true },
+        )
         ToggleRow(
             stringResource(R.string.settings_recent_installs), settings.showRecentInstalls,
             subtitle = stringResource(R.string.settings_recent_installs_summary),
@@ -358,6 +366,14 @@ internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> 
             subtitle = stringResource(R.string.settings_drawer_usage_summary),
         ) { v -> update { it.copy(showUsageInDrawer = v) } }
         SettingRow(stringResource(R.string.settings_hidden_apps), value = settings.hidden.size.toString(), onClick = { go(Routes.HIDDEN) })
+    }
+
+    if (layoutDialog) {
+        ChoiceDialog(
+            stringResource(R.string.settings_drawer_layout),
+            DrawerLayout.entries.map { it to stringResource(it.labelRes) },
+            settings.drawerLayout, { layoutDialog = false },
+        ) { v -> update { it.copy(drawerLayout = v) } }
     }
 }
 
