@@ -59,6 +59,7 @@ import com.focus.launcher.ui.home.clockTapLabel
 import com.focus.launcher.ui.home.shortcutLabel
 import com.focus.launcher.ui.launchApp
 import com.focus.launcher.ui.theme.LocalFocusColors
+import com.focus.launcher.ui.widgets.WidgetController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -334,6 +335,21 @@ internal fun FastAppsPage(settings: Settings, apps: List<AppEntry>, onBack: () -
     }
 }
 
+// ---- Widgets page ----------------------------------------------------------------------------
+
+@Composable
+internal fun WidgetsSettingsPage(settings: Settings, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val supported = remember { WidgetController.isSupported(context) }
+    Page(stringResource(R.string.settings_widgets_page), onBack) {
+        ToggleRow(
+            stringResource(R.string.settings_widgets_show), settings.showWidgetPage,
+            subtitle = stringResource(R.string.settings_widgets_show_summary),
+        ) { v -> update { it.copy(showWidgetPage = v) } }
+        Note(stringResource(if (supported) R.string.settings_widgets_note else R.string.widgets_unsupported))
+    }
+}
+
 // ---- App drawer ------------------------------------------------------------------------------
 
 @Composable
@@ -554,7 +570,7 @@ internal fun AppearancePage(settings: Settings, onBack: () -> Unit) {
 @Composable
 internal fun GesturesPage(settings: Settings, status: SetupStatus, onBack: () -> Unit, go: (String) -> Unit) {
     Page(stringResource(R.string.settings_gestures), onBack) {
-        Note(stringResource(R.string.settings_gestures_note))
+        Note(stringResource(if (settings.showWidgetPage) R.string.settings_gestures_note_widgets else R.string.settings_gestures_note))
         ToggleRow(stringResource(R.string.settings_swipe_down_notifications), settings.swipeDownNotifications) { v -> update { it.copy(swipeDownNotifications = v) } }
         ToggleRow(
             stringResource(R.string.settings_swipe_up_search), settings.swipeUpSearch,

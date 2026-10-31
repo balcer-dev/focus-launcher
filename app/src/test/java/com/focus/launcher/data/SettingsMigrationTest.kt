@@ -80,6 +80,7 @@ class SettingsMigrationTest {
             showNote = true, note = "Call mum", showSeconds = true, favoriteSize = FavoriteSize.SMALL,
             showWallpaper = true, wallpaperStamp = 1_761_900_000_000L, wallpaperVisibility = 60,
             showTodo = true, todos = listOf(TodoItem("a", "Buy milk"), TodoItem("b", "Pay the bill", 1_761_900_000_000L)),
+            showWidgetPage = true, widgets = listOf(WidgetSlot(12, 260), WidgetSlot(7)),
         )
         val file = s.toJson().toString(2)
         assertEquals(s, Settings.fromBackup(JSONObject(file)))

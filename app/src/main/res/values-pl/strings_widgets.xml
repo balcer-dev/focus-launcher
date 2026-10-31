@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widgets_title">Widżety</string>
+    <string name="widgets_add">+ Dodaj widżet</string>
+    <string name="widgets_empty">Dodaj widżet, żeby wypełnić tę stronę. Każdy zajmuje całą szerokość.</string>
+    <string name="widgets_unsupported">Ten telefon nie obsługuje widżetów.</string>
+    <string name="widgets_unavailable">Widżet niedostępny</string>
+
+    <string name="widgets_move_up">Przenieś wyżej</string>
+    <string name="widgets_move_down">Przenieś niżej</string>
+    <string name="widgets_shorter">Zmniejsz wysokość</string>
+    <string name="widgets_taller">Zwiększ wysokość</string>
+    <string name="widgets_remove">Usuń</string>
+    <string name="widgets_remove_title">Usunąć ten widżet?</string>
+    <string name="widgets_remove_message">Zniknie z tej strony razem ze swoimi ustawieniami. Możesz go dodać ponownie.</string>
+
+    <string name="widgets_choose_title">Dodaj widżet</string>
+    <string name="widgets_search">Szukaj aplikacji i widżetów</string>
+    <string name="widgets_loading">Wczytywanie widżetów…</string>
+    <string name="widgets_none_installed">Żadna aplikacja na tym telefonie nie ma widżetów.</string>
+    <string name="widgets_no_match">Brak pasujących widżetów</string>
+    <string name="widgets_list_failed">Nie udało się odczytać listy widżetów</string>
+    <string name="widgets_choice_detail">%1$s · min. %2$d × %3$d dp</string>
+
+    <string name="widgets_add_failed">Nie udało się dodać widżetu</string>
+    <string name="widgets_configure_failed">Nie udało się otworzyć ustawień widżetu</string>
+    <string name="widgets_full">Strona jest pełna. Najpierw usuń jakiś widżet.</string>
+</resources>

@@ -26,6 +26,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -111,7 +112,7 @@ import java.time.LocalDate
  *
  * Gestures on empty space: long-press opens settings, swipe down pulls the notification shade,
  * swipe up jumps to search, double-tap locks the phone. Swiping left (handled by the pager that
- * hosts this page) opens the app drawer.
+ * hosts this page) opens the app drawer, or first the widgets page while that is on.
  */
 @Composable
 fun HomeScreen(
@@ -414,7 +415,9 @@ fun HomeScreen(
                 }
                 // One thing a new user could not guess, until they have done it once. A tap moves on.
                 tip?.let { current ->
-                    TipLine(current) {
+                    // With the widgets page in between, the app list is two swipes away.
+                    val gesture = if (current == Tip.SWIPE_LEFT && settings.showWidgetPage) R.string.tip_swipe_left_twice else current.gestureRes
+                    TipLine(current, gesture) {
                         Graph.state.nextTip()
                         if (current == Tip.SECTIONS) onOpenSettings("home")
                     }
@@ -484,7 +487,7 @@ fun HomeScreen(
             // Fast apps
             if (favorites.isEmpty()) {
                 T(
-                    stringResource(R.string.home_favorites_empty),
+                    stringResource(if (settings.showWidgetPage) R.string.home_favorites_empty_widgets else R.string.home_favorites_empty),
                     Modifier.fillMaxWidth().clickable { onOpenDrawer(false) }.padding(horizontal = 12.dp, vertical = 8.dp),
                     size = 15.sp, color = c.dim, align = settings.homeAlign.text(), lineHeight = 23.sp,
                 )
@@ -679,7 +682,7 @@ fun HomeScreen(
  * line; if a large text size makes it longer it wraps, it is never cut off. A tap skips it.
  */
 @Composable
-private fun TipLine(tip: Tip, onClick: () -> Unit) {
+private fun TipLine(tip: Tip, @StringRes gestureRes: Int = tip.gestureRes, onClick: () -> Unit) {
     val c = LocalFocusColors.current
     Column(
         Modifier
@@ -696,7 +699,7 @@ private fun TipLine(tip: Tip, onClick: () -> Unit) {
         )
         VSpace(5.dp)
         Row(verticalAlignment = Alignment.Top) {
-            T(stringResource(tip.gestureRes), size = 16.sp, weight = FontWeight.Medium, maxLines = 1)
+            T(stringResource(gestureRes), size = 16.sp, weight = FontWeight.Medium, maxLines = 1)
             T("  →  ", size = 16.sp, color = c.dim, maxLines = 1)
             T(stringResource(tip.resultRes), Modifier.weight(1f, fill = false), size = 16.sp, color = c.dim)
         }

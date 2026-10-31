@@ -43,6 +43,8 @@ import com.focus.launcher.ui.launchApp
 import com.focus.launcher.ui.openWebSearch
 import com.focus.launcher.ui.theme.FocusTheme
 import com.focus.launcher.ui.theme.applyFocusWindow
+import com.focus.launcher.ui.widgets.WidgetController
+import com.focus.launcher.ui.widgets.WidgetPage
 import com.focus.launcher.util.Perms
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -51,9 +53,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
-/** The home screen (page 0) and, one swipe to the left, the app drawer (page 1). */
+/**
+ * The home screen (page 0) and, one swipe to the left, the app drawer. With the widgets page on,
+ * that page comes between them (see [PagerLayout]).
+ */
 class MainActivity : ComponentActivity() {
     private val homePresses = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+
+    // Made on first use: while the widgets page is off, nothing here talks to the widget service.
+    private val widgetsLazy = lazy { WidgetController(this) }
+    private val widgets: WidgetController by widgetsLazy
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,21 +76,59 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by Graph.settings.flow.collectAsStateWithLifecycle()
             LaunchedEffect(settings.dark, settings.hideStatusBar) { applyFocusWindow(settings.dark, settings.hideStatusBar) }
-            FocusTheme(settings) { Launcher(settings, homePresses) }
+            FocusTheme(settings) { Launcher(settings, homePresses, widgetsLazy) }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Widgets on the page only redraw while their host listens to the widget service.
+        if (Graph.settings.value.showWidgetPage) widgets.startListening()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // A restored backup from another phone, a widget whose app was uninstalled: drop what is not there.
+        if (Graph.settings.value.showWidgetPage) widgets.dropUnbound()
+    }
+
+    override fun onStop() {
+        if (widgetsLazy.isInitialized()) widgets.stopListening()
+        super.onStop()
+    }
+
+    // Adding a widget goes through system screens that answer by request code: the widget host's
+    // startAppWidgetConfigureActivityForResult has no Activity Result API counterpart.
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (WidgetController.owns(requestCode)) widgets.onActivityResult(requestCode, resultCode)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         // The Home button while the launcher is already showing: go back to page 0.
-        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) homePresses.tryEmit(Unit)
+        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            if (widgetsLazy.isInitialized()) widgets.onHomePressed()
+            homePresses.tryEmit(Unit)
+        }
     }
+}
+
+/** Which page of the launcher is where: home first, then the widgets page while it is on, then the app drawer. */
+internal data class PagerLayout(val showWidgets: Boolean) {
+    val pageCount: Int get() = if (showWidgets) 3 else 2
+
+    /** -1 while the widgets page is off: no page has that number. */
+    val widgetsPage: Int get() = if (showWidgets) 1 else -1
+
+    val drawerPage: Int get() = pageCount - 1
 }
 
 private var lastBackfill = 0L
 
 @Composable
-private fun Launcher(settings: Settings, homePresses: Flow<Unit>) {
+private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<WidgetController>) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -91,13 +138,20 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>) {
     val pendingReview by Graph.state.pendingReview.collectAsStateWithLifecycle()
     val tip by Graph.state.tip.collectAsStateWithLifecycle()
 
-    val pager = rememberPagerState { 2 }
+    val layout = PagerLayout(settings.showWidgetPage)
+    val pager = rememberPagerState { layout.pageCount }
     // The drawer counts as open from the moment a swipe is let go towards it: not halfway through
     // the drag, where the finger can still turn back (the keyboard used to pop up and drop again),
     // and not only once the page has settled (the keyboard would come late). So the keyboard
     // rises while the page glides in, and falls while it glides out.
     val pagerDragged by pager.interactionSource.collectIsDraggedAsState()
-    val drawerActive by remember { derivedStateOf { if (pagerDragged) pager.settledPage == 1 else pager.targetPage == 1 } }
+    val drawerActive by remember(layout) {
+        derivedStateOf { if (pagerDragged) pager.settledPage == layout.drawerPage else pager.targetPage == layout.drawerPage }
+    }
+    // The same for the widgets page, whose dialogs close as soon as it is left.
+    val widgetsActive by remember(layout) {
+        derivedStateOf { if (pagerDragged) pager.settledPage == layout.widgetsPage else pager.targetPage == layout.widgetsPage }
+    }
     var query by remember { mutableStateOf("") }
     var menuApp by remember { mutableStateOf<AppEntry?>(null) }
     var wantsSearchFocus by remember { mutableStateOf(false) }
@@ -128,17 +182,22 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>) {
     }
 
     // Leaving the launcher (an app was opened, the screen went off) always resets it to page 0.
+    // Except while a widget is being added: the system's permission screen and the widget's own
+    // setup come in between, and the new widget should be in view on the way back.
     LifecycleStartEffect(Unit) {
         onStopOrDispose {
-            query = ""
-            menuApp = null
-            wantsSearchFocus = false
-            scope.launch { pager.scrollToPage(0) }
+            if (!(widgets.isInitialized() && widgets.value.awaitingResult)) {
+                query = ""
+                menuApp = null
+                wantsSearchFocus = false
+                scope.launch { pager.scrollToPage(0) }
+            }
         }
     }
 
-    // Arrived in the app list, by whichever way: that tip is learnt.
-    LaunchedEffect(pager.settledPage) { if (pager.settledPage == 1) Graph.state.did(Tip.SWIPE_LEFT) }
+    // Arrived in the app list, by whichever way: that tip is learnt. The widgets page, which a swipe
+    // left reaches first while it is on, does not count: the tip promises all apps.
+    LaunchedEffect(pager.settledPage, layout) { if (pager.settledPage == layout.drawerPage) Graph.state.did(Tip.SWIPE_LEFT) }
 
     LaunchedEffect(Unit) {
         homePresses.collect {
@@ -181,7 +240,9 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>) {
                 }
             }
         },
-        beyondViewportPageCount = 1,
+        // Every page stays composed, as when there were only two: the app list is ready, search
+        // field and all, the moment a swipe up asks for it.
+        beyondViewportPageCount = layout.pageCount - 1,
         key = { it },
     ) { page ->
         // The page being left fades and sinks back a touch while the other one arrives. Done in
@@ -192,7 +253,8 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>) {
                 // Text on a flat background never overlaps itself, so each draw call can simply be
                 // made more transparent. The default would render the whole page into a full-screen
                 // off-screen buffer on every frame of the swipe: more memory and GPU for no gain.
-                compositingStrategy = CompositingStrategy.ModulateAlpha
+                // Widgets are pictures that do overlap, so their page fades as one layer.
+                compositingStrategy = if (page == layout.widgetsPage) CompositingStrategy.Auto else CompositingStrategy.ModulateAlpha
                 alpha = (1f - distance * 1.2f).coerceIn(0f, 1f)
                 val scale = 1f - 0.05f * distance
                 scaleX = scale
@@ -212,11 +274,13 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>) {
                     onAppMenu = { Graph.state.did(Tip.APP_MENU); menuApp = it },
                     onOpenDrawer = { focusSearch ->
                         wantsSearchFocus = focusSearch
-                        scope.launch { pager.animateScrollToPage(1) }
+                        scope.launch { pager.animateScrollToPage(layout.drawerPage) }
                     },
                     onOpenSettings = { route -> context.startActivity(SettingsActivity.intent(context, route)) },
                     onOpenReview = { week -> context.startActivity(ReviewActivity.intent(context, week)) },
                 )
+            } else if (page == layout.widgetsPage) {
+                WidgetPage(slots = settings.widgets, controller = widgets.value, isActive = widgetsActive)
             } else {
                 DrawerScreen(
                     settings = settings,

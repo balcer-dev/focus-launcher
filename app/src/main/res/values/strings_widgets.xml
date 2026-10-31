@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The widgets page: an optional page of Android widgets between the home screen and the app
+    drawer, the controls above each widget, and the list of widgets to add.
+-->
+<resources>
+    <!-- Title of the page, shown in small capitals. -->
+    <string name="widgets_title">Widgets</string>
+    <!-- At the right of the title: opens the list of widgets to add. -->
+    <string name="widgets_add">+ Add widget</string>
+    <string name="widgets_empty">Add a widget to fill this page. Each one takes the full width.</string>
+    <!-- On a phone without a widget service. Also under Settings → Widgets page there. -->
+    <string name="widgets_unsupported">This phone does not support widgets.</string>
+    <!-- Over a widget whose app was uninstalled while the page is open. -->
+    <string name="widgets_unavailable">Widget unavailable</string>
+
+    <!-- Read out by screen readers for the arrow, minus and plus buttons above each widget. -->
+    <string name="widgets_move_up">Move up</string>
+    <string name="widgets_move_down">Move down</string>
+    <string name="widgets_shorter">Make shorter</string>
+    <string name="widgets_taller">Make taller</string>
+    <!-- Above each widget, and the button of the question that follows. -->
+    <string name="widgets_remove">Remove</string>
+    <string name="widgets_remove_title">Remove this widget?</string>
+    <string name="widgets_remove_message">It leaves this page, along with its settings. You can add it again.</string>
+
+    <!-- The list of widgets to add. -->
+    <string name="widgets_choose_title">Add widget</string>
+    <string name="widgets_search">Search apps and widgets</string>
+    <string name="widgets_loading">Loading widgets…</string>
+    <string name="widgets_none_installed">No app on this phone offers a widget.</string>
+    <string name="widgets_no_match">No matching widgets</string>
+    <string name="widgets_list_failed">Could not read the list of widgets</string>
+    <!--
+        Under the name of the app: the widget's name and the smallest size it asks for, in dp
+        (density-independent pixels), e.g. "Agenda · min 250 × 110 dp".
+    -->
+    <string name="widgets_choice_detail">%1$s · min %2$d × %3$d dp</string>
+
+    <!-- Toasts while adding a widget. -->
+    <string name="widgets_add_failed">Could not add the widget</string>
+    <string name="widgets_configure_failed">Could not open the widget\'s setup</string>
+    <string name="widgets_full">The page is full. Remove a widget first.</string>
+</resources>

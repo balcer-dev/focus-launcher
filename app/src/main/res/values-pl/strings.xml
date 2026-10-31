@@ -38,6 +38,7 @@
     <string name="tip_hint">"%1$s  →  %2$s"</string>
     <string name="tip_swipe_left">Przesuń w lewo</string>
     <string name="tip_swipe_left_result">wszystkie aplikacje</string>
+    <string name="tip_swipe_left_twice">Przesuń dwa razy w lewo</string>
     <string name="tip_app_menu">Przytrzymaj aplikację</string>
     <string name="tip_app_menu_result">przypnij, minutnik, ukryj</string>
     <string name="tip_swipe_up">Przesuń w górę</string>

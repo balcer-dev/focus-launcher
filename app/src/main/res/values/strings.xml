@@ -59,6 +59,8 @@
     <string name="tip_hint">"%1$s  →  %2$s"</string>
     <string name="tip_swipe_left">Swipe left</string>
     <string name="tip_swipe_left_result">all apps</string>
+    <!-- The same gesture while the widgets page sits between the home screen and the app drawer. -->
+    <string name="tip_swipe_left_twice">Swipe left twice</string>
     <string name="tip_app_menu">Long-press an app</string>
     <string name="tip_app_menu_result">pin, timer, hide</string>
     <string name="tip_swipe_up">Swipe up</string>

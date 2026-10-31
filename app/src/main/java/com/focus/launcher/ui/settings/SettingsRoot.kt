@@ -94,6 +94,7 @@ object Routes {
     const val SETUP = "setup"
     const val HOME = "home"
     const val FAST_APPS = "fastapps"
+    const val WIDGETS = "widgets"
     const val DRAWER = "drawer"
     const val HIDDEN = "hidden"
     const val TIMERS = "timers"
@@ -168,6 +169,7 @@ fun SettingsRoot(settings: Settings, startRoute: String?, onExit: () -> Unit) {
             Routes.SETUP -> SetupPage(status, back) { status = SetupStatus.read(context) }
             Routes.HOME -> HomePage(settings, apps, back, go)
             Routes.FAST_APPS -> FastAppsPage(settings, apps, back)
+            Routes.WIDGETS -> WidgetsSettingsPage(settings, back)
             Routes.DRAWER -> DrawerPage(settings, back, go)
             Routes.HIDDEN -> HiddenAppsPage(settings, apps, back)
             Routes.TIMERS -> TimersPage(settings, apps, status, back, go)
@@ -223,6 +225,12 @@ private fun MainPage(
         )
         Section(stringResource(R.string.settings_section_launcher))
         SettingRow(stringResource(R.string.settings_home_screen), subtitle = stringResource(R.string.settings_home_screen_summary), onClick = { go(Routes.HOME) })
+        SettingRow(
+            stringResource(R.string.settings_widgets_page),
+            subtitle = stringResource(R.string.settings_widgets_page_summary),
+            value = stringResource(if (settings.showWidgetPage) R.string.settings_on else R.string.settings_off),
+            onClick = { go(Routes.WIDGETS) },
+        )
         SettingRow(
             stringResource(R.string.settings_app_drawer),
             subtitle = stringResource(R.string.settings_app_drawer_summary),

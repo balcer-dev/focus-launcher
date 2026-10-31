@@ -78,6 +78,15 @@ class AppState(context: Context) {
         _pendingReview.value = weekStart
     }
 
+    /**
+     * Id of a widget still being added to the widgets page, while the system asks for permission or
+     * the widget shows its setup screen; -1 when none. Kept here so that the answer still finds it
+     * after Android has restarted the app in between.
+     */
+    var pendingWidgetId: Int
+        get() = prefs.getInt(KEY_PENDING_WIDGET, -1)
+        set(value) = prefs.edit { putInt(KEY_PENDING_WIDGET, value) }
+
     /** The one-line intention the user wrote at the end of a weekly review. */
     fun intention(weekStart: LocalDate): String = prefs.getString("intention_$weekStart", "") ?: ""
 
@@ -96,5 +105,6 @@ class AppState(context: Context) {
         const val KEY_TIP = "tip_index"
         const val KEY_PENDING = "pending_review_week"
         const val KEY_ANNOUNCED = "last_announced_week"
+        const val KEY_PENDING_WIDGET = "pending_widget_id"
     }
 }

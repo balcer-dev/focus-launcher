@@ -14,6 +14,8 @@
     <string name="settings_section_launcher">Launcher</string>
     <string name="settings_home_screen">Ekran główny</string>
     <string name="settings_home_screen_summary">Zegar, sekcje, szybkie aplikacje, skróty w rogach</string>
+    <string name="settings_widgets_page">Strona widżetów</string>
+    <string name="settings_widgets_page_summary">Widżety Androida między ekranem głównym a listą aplikacji</string>
     <string name="settings_app_drawer">Lista aplikacji</string>
     <string name="settings_app_drawer_summary">Klawiatura, wyszukiwanie, ostatnio zainstalowane, ukryte aplikacje</string>
     <plurals name="settings_app_count">
@@ -159,6 +161,11 @@
     <string name="settings_fast_apps_full">To maksimum. %1$d w zupełności wystarczy.</string>
     <string name="settings_add_fast_app">Dodaj szybką aplikację</string>
 
+    <!-- Strona widżetów -->
+    <string name="settings_widgets_show">Pokazuj stronę widżetów</string>
+    <string name="settings_widgets_show_summary">Przesuń w lewo na ekranie głównym, żeby zobaczyć widżety, i jeszcze raz – do listy aplikacji.</string>
+    <string name="settings_widgets_note">Widżety dodajesz, przestawiasz, zmieniasz ich wysokość i usuwasz na samej stronie. Należą do tego telefonu: kopia zapasowa przywrócona na innym telefonie zostawi stronę pustą.</string>
+
     <!-- Lista aplikacji -->
     <string name="settings_search">Wyszukiwanie</string>
     <string name="settings_auto_keyboard">Od razu otwieraj klawiaturę</string>
@@ -214,6 +221,7 @@
 
     <!-- Gesty -->
     <string name="settings_gestures_note">Przesunięcie w lewo zawsze otwiera listę aplikacji, a przytrzymanie pustego miejsca – te ustawienia.</string>
+    <string name="settings_gestures_note_widgets">Przesunięcie w lewo otwiera stronę widżetów, kolejne – listę aplikacji. Przytrzymanie pustego miejsca otwiera te ustawienia.</string>
     <string name="settings_swipe_down_notifications">Przesuń w dół – powiadomienia</string>
     <string name="settings_swipe_up_search">Przesuń w górę – wyszukiwanie</string>
     <string name="settings_swipe_up_search_summary">Przechodzi do listy aplikacji z otwartą klawiaturą.</string>

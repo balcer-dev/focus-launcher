@@ -31,6 +31,7 @@
     <string name="home_toast_double_tap_lock">Włącz usługę minutników Focus, by blokować ekran dwukrotnym kliknięciem</string>
 
     <string name="home_favorites_empty">Przesuń w lewo do swoich aplikacji.\nPrzytrzymaj jedną, by ją tu przypiąć.</string>
+    <string name="home_favorites_empty_widgets">Przesuń dwa razy w lewo do swoich aplikacji.\nPrzytrzymaj jedną, by ją tu przypiąć.</string>
 
     <string name="home_calendar_title">Kalendarz</string>
     <string name="home_calendar_show_events">Pokaż nadchodzące wydarzenia  →</string>

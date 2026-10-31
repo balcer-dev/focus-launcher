@@ -141,6 +141,16 @@ data class Settings(
     val leftShortcut: String = SHORTCUT_PHONE,
     val rightShortcut: String = SHORTCUT_CAMERA,
 
+    // Widgets page
+    /** A page of Android widgets between the home screen and the app list. Off: the pager is the two of them only. */
+    val showWidgetPage: Boolean = false,
+    /**
+     * The widgets on that page, top to bottom. Their ids belong to this phone's widget service: from
+     * a backup restored on another phone they stand for nothing, and the launcher drops them the next
+     * time it comes on screen.
+     */
+    val widgets: List<WidgetSlot> = emptyList(),
+
     // Drawer
     val autoKeyboard: Boolean = false,
     val autoLaunch: Boolean = false,
@@ -225,6 +235,9 @@ data class Settings(
         put("showShortcuts", showShortcuts)
         put("leftShortcut", leftShortcut)
         put("rightShortcut", rightShortcut)
+
+        put("showWidgetPage", showWidgetPage)
+        put("widgets", JSONArray().apply { widgets.forEach { put(it.toJson()) } })
 
         put("autoKeyboard", autoKeyboard)
         put("autoLaunch", autoLaunch)
@@ -322,6 +335,10 @@ data class Settings(
                 showShortcuts = o.optBoolean("showShortcuts", d.showShortcuts),
                 leftShortcut = o.optString("leftShortcut", d.leftShortcut),
                 rightShortcut = o.optString("rightShortcut", d.rightShortcut),
+
+                showWidgetPage = o.optBoolean("showWidgetPage", d.showWidgetPage),
+                // Not checked against the phone here: loading has no access to the widget service (see WidgetController.dropUnbound).
+                widgets = WidgetSlot.listFromJson(o.optJSONArray("widgets")),
 
                 autoKeyboard = o.optBoolean("autoKeyboard", d.autoKeyboard),
                 autoLaunch = o.optBoolean("autoLaunch", d.autoLaunch),

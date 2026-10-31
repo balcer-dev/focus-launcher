@@ -54,6 +54,8 @@
 
     <!-- Fast apps: shown while none is pinned. Two lines. -->
     <string name="home_favorites_empty">Swipe left for your apps.\nLong-press one to pin it here.</string>
+    <!-- The same while the widgets page sits between the home screen and the app drawer. -->
+    <string name="home_favorites_empty_widgets">Swipe left twice for your apps.\nLong-press one to pin it here.</string>
 
     <!-- Calendar section. -->
     <string name="home_calendar_title">Calendar</string>
