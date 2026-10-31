@@ -118,13 +118,20 @@
     <string name="settings_show_seconds_summary">The clock redraws every second while the home screen is on.</string>
     <string name="settings_sections">Sections</string>
     <string name="settings_calendar">Calendar</string>
-    <string name="settings_calendar_summary">Your next events, from one calendar. Emoji in titles are left out.</string>
-    <string name="settings_calendar_to_show">Calendar to show</string>
-    <string name="settings_calendar_to_show_summary">Only one is shown at a time. Search the list to find the one you want.</string>
-    <!-- Value of "Calendar to show": all calendars together. -->
+    <string name="settings_calendar_summary">Your next events, from the calendars you choose. Emoji in titles are left out.</string>
+    <string name="settings_calendar_to_show">Calendars to show</string>
+    <string name="settings_calendar_to_show_summary">One, several together, or all. Search the list to find the ones you want.</string>
+    <!-- Value of "Calendars to show": all calendars together. -->
     <string name="settings_calendar_all">All</string>
+    <!-- Value of "Calendars to show" with several chosen. %1$d is how many (two or more). -->
+    <plurals name="settings_calendar_count">
+        <item quantity="one">%1$d calendar</item>
+        <item quantity="other">%1$d calendars</item>
+    </plurals>
     <string name="settings_calendar_none_found">None found</string>
     <string name="settings_calendar_work_blocked">Calendars inside your Work profile are not listed: the organisation that manages it does not let other apps read them, and Focus respects that. If you share your work calendar with a personal Google account, it shows up here like any other calendar.</string>
+    <string name="settings_calendar_compact">Compact calendar</string>
+    <string name="settings_calendar_compact_summary">Smaller text, so more of your next events fit.</string>
     <string name="settings_week_strip">Week strip</string>
     <string name="settings_week_strip_summary">Monday to Sunday with today marked, above the events.</string>
     <string name="settings_music">Music</string>
@@ -339,7 +346,7 @@
     <string name="settings_welcome_setup_first">Set up Focus first</string>
 
     <!-- Calendar picker -->
-    <string name="settings_calendar_picker_subtitle">One calendar at a time. Search by calendar or account name.</string>
+    <string name="settings_calendar_picker_subtitle">Tick one or several. Search by calendar or account name.</string>
     <string name="settings_calendar_search">Search calendars</string>
     <string name="settings_calendar_picker_work_note">Looking for your work calendar? This phone has a Work profile, and the organisation that manages it does not allow other apps to read its calendars, so they cannot be listed here. If you share your work calendar with one of your personal Google accounts, it appears in this list.</string>
     <!-- How many events a calendar has coming up. %1$d is the count. -->
@@ -352,4 +359,7 @@
     <!-- %1$s is what was typed into the search field. -->
     <string name="settings_calendar_no_match">No calendar matches “%1$s”.</string>
     <string name="settings_calendar_all_together">All calendars together</string>
+    <!-- The picker's first choice: Focus picks the calendar itself. -->
+    <string name="settings_calendar_auto">Automatic</string>
+    <string name="settings_calendar_auto_summary">Your main calendar with events coming up</string>
 </resources>

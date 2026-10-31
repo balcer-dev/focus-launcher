@@ -105,12 +105,20 @@
     <string name="settings_show_seconds_summary">Zegar odświeża się co sekundę, gdy widać ekran główny.</string>
     <string name="settings_sections">Sekcje</string>
     <string name="settings_calendar">Kalendarz</string>
-    <string name="settings_calendar_summary">Najbliższe wydarzenia z jednego kalendarza. Emoji w tytułach są pomijane.</string>
-    <string name="settings_calendar_to_show">Pokazywany kalendarz</string>
-    <string name="settings_calendar_to_show_summary">Naraz widać tylko jeden. Przeszukaj listę, żeby znaleźć ten, który chcesz.</string>
+    <string name="settings_calendar_summary">Najbliższe wydarzenia z wybranych kalendarzy. Emoji w tytułach są pomijane.</string>
+    <string name="settings_calendar_to_show">Pokazywane kalendarze</string>
+    <string name="settings_calendar_to_show_summary">Jeden, kilka razem albo wszystkie. Przeszukaj listę, żeby znaleźć te, które chcesz.</string>
     <string name="settings_calendar_all">Wszystkie</string>
+    <plurals name="settings_calendar_count">
+        <item quantity="one">%1$d kalendarz</item>
+        <item quantity="few">%1$d kalendarze</item>
+        <item quantity="many">%1$d kalendarzy</item>
+        <item quantity="other">%1$d kalendarza</item>
+    </plurals>
     <string name="settings_calendar_none_found">Nie znaleziono</string>
     <string name="settings_calendar_work_blocked">Kalendarze z twojego profilu służbowego nie są tu wymienione: organizacja, która nim zarządza, nie pozwala innym aplikacjom ich odczytywać, a Focus to szanuje. Jeśli udostępnisz kalendarz służbowy osobistemu kontu Google, pojawi się tutaj jak każdy inny.</string>
+    <string name="settings_calendar_compact">Kompaktowy kalendarz</string>
+    <string name="settings_calendar_compact_summary">Mniejszy tekst, więc mieści się więcej najbliższych wydarzeń.</string>
     <string name="settings_week_strip">Pasek tygodnia</string>
     <string name="settings_week_strip_summary">Od poniedziałku do niedzieli z zaznaczonym dniem dzisiejszym, nad wydarzeniami.</string>
     <string name="settings_music">Muzyka</string>
@@ -299,7 +307,7 @@
     <string name="settings_welcome_setup_first">Najpierw skonfiguruj Focus</string>
 
     <!-- Wybór kalendarza -->
-    <string name="settings_calendar_picker_subtitle">Jeden kalendarz naraz. Szukaj po nazwie kalendarza lub konta.</string>
+    <string name="settings_calendar_picker_subtitle">Zaznacz jeden lub kilka. Szukaj po nazwie kalendarza lub konta.</string>
     <string name="settings_calendar_search">Szukaj kalendarzy</string>
     <string name="settings_calendar_picker_work_note">Szukasz kalendarza służbowego? Ten telefon ma profil służbowy, a organizacja, która nim zarządza, nie pozwala innym aplikacjom odczytywać jego kalendarzy, więc nie mogą się tu pojawić. Jeśli udostępnisz kalendarz służbowy jednemu ze swoich osobistych kont Google, pojawi się na tej liście.</string>
     <plurals name="settings_calendar_upcoming">
@@ -311,4 +319,6 @@
     <string name="settings_calendar_empty">pusty</string>
     <string name="settings_calendar_no_match">Żaden kalendarz nie pasuje do „%1$s”.</string>
     <string name="settings_calendar_all_together">Wszystkie kalendarze razem</string>
+    <string name="settings_calendar_auto">Automatycznie</string>
+    <string name="settings_calendar_auto_summary">Twój główny kalendarz z nadchodzącymi wydarzeniami</string>
 </resources>

@@ -143,13 +143,14 @@ fun HomeScreen(
     var calendarAccess by remember { mutableStateOf(CalendarRepository.hasAccess(context)) }
     var events by remember { mutableStateOf(emptyList<CalEvent>()) }
     val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { calendarAccess = it }
-    var shownCalendar by remember { mutableStateOf<CalendarInfo?>(null) }
-    LaunchedEffect(settings.showCalendar, settings.calendarKey, resumeCount, calendarAccess) {
+    var shownCalendars by remember { mutableStateOf(emptyList<CalendarInfo>()) }
+    LaunchedEffect(settings.showCalendar, settings.calendarKeys, settings.compactCalendar, resumeCount, calendarAccess) {
         if (settings.showCalendar) {
             calendarAccess = CalendarRepository.hasAccess(context)
-            // Exactly one calendar is shown: the chosen one, else the main one with events coming up.
-            val agenda = CalendarRepository.agenda(context, settings.calendarKey)
-            shownCalendar = agenda.calendar
+            // The chosen calendars together, else the main one with events coming up. As many events
+            // as the roomiest layout below shows: three, or twice that in compact text.
+            val agenda = CalendarRepository.agenda(context, settings.calendarKeys, max = if (settings.compactCalendar) 6 else 3)
+            shownCalendars = agenda.calendars
             events = agenda.events
         }
     }
@@ -289,18 +290,27 @@ fun HomeScreen(
         val emsWide = (if (settings.font == FontChoice.MONO) 3.1f else 2.75f) + (if (settings.showSeconds) 0.55f else 0f)
         val splitTimeSp = ((halfWidth - amPmWidth) / emsWide / textScale).coerceIn(30f, 56f)
 
+        // Compact calendar text: twice the events in the section, three instead of two by the clock.
+        // The messages shown instead of events keep their size, so they are measured at full size.
+        val compactCalendar = settings.compactCalendar
+        val compactEvents = compactCalendar && eventCount > 0
+        val sideEvents = if (compactCalendar) 3 else 2
+        fun calendarLines(fit: Fit) = if (compactCalendar) fit.maxEvents * 2 else fit.maxEvents
+
         fun heightOf(fit: Fit): Float {
             val splitClock = (splitTimeSp * 1.2f + 42f) * textScale + 16f
-            val splitSide = if (sideCalendar) eventCount.coerceIn(1, 2) * 44f * textScale + 16f else 86f * textScale + 16f
+            val splitSide = if (sideCalendar) eventCount.coerceIn(1, sideEvents) * (if (compactEvents) 34f else 44f) * textScale + 16f else 86f * textScale + 16f
             val clock = when (settings.clockStyle) {
                 ClockStyle.RING -> fit.ring.value
                 ClockStyle.SPLIT -> maxOf(splitClock, splitSide)
                 ClockStyle.PLAIN -> 100f * textScale
             }
             val noticeLines = if (notices > 0) 14f + notices * (19f * textScale + 12f) else 0f
-            val shownEvents = fit.maxEvents.coerceAtMost(eventCount).coerceAtLeast(1)
+            val shownEvents = calendarLines(fit).coerceAtMost(eventCount).coerceAtLeast(1)
             val strip = if (settings.showWeekStrip) 46f + 14f * textScale else 0f
-            val calendar = if (settings.showCalendar && !sideCalendar) 22f + 14f * textScale + strip + shownEvents * (18f * textScale + 6f) else 0f
+            val eventRow = if (compactEvents) 15f * textScale + 2f else 18f * textScale + 6f
+            val calendarTitle = (if (compactCalendar) 17f else 22f) + 14f * textScale
+            val calendar = if (settings.showCalendar && !sideCalendar) calendarTitle + strip + shownEvents * eventRow else 0f
             // Title row as tall as its 48dp buttons, then the song.
             val musicHeight = if (musicVisible) 12f + 48f + 24f * textScale else 0f
             val noteLines = if (settings.note.isBlank()) 1 else fit.maxEvents
@@ -363,6 +373,8 @@ fun HomeScreen(
                             onClick = { openCalendarApp(context) },
                             onLongPress = { choosingSplitSide = true },
                             onRequestAccess = { askCalendar.launch(Manifest.permission.READ_CALENDAR) },
+                            maxEvents = sideEvents,
+                            compact = compactCalendar,
                         )
                     } else {
                         SplitScreenTime(today, usageAccess, onClick = openScreenTime, onLongPress = { choosingSplitSide = true }, highlight = tip == Tip.SCREEN_TIME)
@@ -425,8 +437,10 @@ fun HomeScreen(
                     use24h = use24h,
                     onClick = { openCalendarApp(context) },
                     onRequestAccess = { askCalendar.launch(Manifest.permission.READ_CALENDAR) },
-                    maxEvents = fit.maxEvents,
-                    calendarName = shownCalendar?.shortName,
+                    maxEvents = calendarLines(fit),
+                    compact = compactCalendar,
+                    // Several calendars together, like all of them, go without a name.
+                    calendarName = shownCalendars.singleOrNull()?.shortName,
                     showWeekStrip = settings.showWeekStrip,
                 )
             }

@@ -79,12 +79,12 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
     var calendarGrants by remember { mutableIntStateOf(0) }
     val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { calendarGrants++ }
     var calendars by remember { mutableStateOf(emptyList<CalendarInfo>()) }
-    var shownCalendar by remember { mutableStateOf<CalendarInfo?>(null) }
+    var shownCalendars by remember { mutableStateOf(emptyList<CalendarInfo>()) }
     var calendarCounts by remember { mutableStateOf(emptyMap<String, Int>()) }
-    LaunchedEffect(settings.showCalendar, settings.calendarKey, calendarGrants) {
+    LaunchedEffect(settings.showCalendar, settings.calendarKeys, calendarGrants) {
         calendars = CalendarRepository.calendars(context)
         calendarCounts = CalendarRepository.upcomingCounts(context, calendars)
-        shownCalendar = CalendarRepository.choose(context, settings.calendarKey, calendars)
+        shownCalendars = CalendarRepository.choose(context, settings.calendarKeys, calendars)
     }
     // A Work profile exists, yet none of its calendars came through: the organisation says no.
     val workBlocked = remember(calendars) { CalendarRepository.hasWorkProfile(context) && calendars.none { it.work } }
@@ -146,10 +146,10 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
         SettingRow(
             stringResource(R.string.settings_calendar_to_show),
             subtitle = stringResource(R.string.settings_calendar_to_show_summary),
-            value = if (settings.calendarKey == CALENDAR_ALL) {
-                stringResource(R.string.settings_calendar_all)
-            } else {
-                shownCalendar?.shortName ?: stringResource(R.string.settings_calendar_none_found)
+            value = when {
+                CALENDAR_ALL in settings.calendarKeys -> stringResource(R.string.settings_calendar_all)
+                shownCalendars.size > 1 -> pluralStringResource(R.plurals.settings_calendar_count, shownCalendars.size, shownCalendars.size)
+                else -> shownCalendars.firstOrNull()?.shortName ?: stringResource(R.string.settings_calendar_none_found)
             },
             enabled = settings.showCalendar && calendars.isNotEmpty(),
             onClick = { dialog = HomeDialog.CALENDAR },
@@ -157,6 +157,10 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
         if (settings.showCalendar && workBlocked) {
             Note(stringResource(R.string.settings_calendar_work_blocked))
         }
+        ToggleRow(
+            stringResource(R.string.settings_calendar_compact), settings.compactCalendar, enabled = settings.showCalendar,
+            subtitle = stringResource(R.string.settings_calendar_compact_summary),
+        ) { v -> update { it.copy(compactCalendar = v) } }
         ToggleRow(
             stringResource(R.string.settings_week_strip), settings.showWeekStrip, enabled = settings.showCalendar,
             subtitle = stringResource(R.string.settings_week_strip_summary),
@@ -237,10 +241,10 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
         HomeDialog.CALENDAR -> CalendarPickerDialog(
             calendars = calendars,
             upcomingCounts = calendarCounts,
-            selectedKey = if (settings.calendarKey == CALENDAR_ALL) CALENDAR_ALL else shownCalendar?.key,
+            selectedKeys = settings.calendarKeys,
             workProfileBlocked = workBlocked,
             onDismiss = close,
-            onPick = { key -> update { it.copy(calendarKey = key) } },
+            onPick = { keys -> update { it.copy(calendarKeys = keys) } },
         )
         HomeDialog.TIME_FORMAT -> ChoiceDialog(
             stringResource(R.string.settings_time_format),

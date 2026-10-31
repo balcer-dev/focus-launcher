@@ -42,6 +42,27 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `a calendar chosen before several could be is still the one shown`() {
+        fun single(key: String) = Settings().toJson().apply { remove("calendarKeys"); put("calendarKey", key) }
+        assertEquals(setOf("p:12"), Settings.fromJson(single("p:12")).calendarKeys)
+        assertEquals(setOf("w:3"), Settings.fromJson(single("w:3")).calendarKeys)
+        assertEquals(setOf(CALENDAR_AUTO), Settings.fromJson(single(CALENDAR_AUTO)).calendarKeys)
+        assertEquals(setOf(CALENDAR_ALL), Settings.fromJson(single(CALENDAR_ALL)).calendarKeys)
+        val bareId = Settings().toJson().apply { remove("calendarKeys"); put("calendarId", 7L) }
+        assertEquals(setOf("p:7"), Settings.fromJson(bareId).calendarKeys)
+        assertEquals(setOf(CALENDAR_AUTO), Settings.fromJson(Settings().toJson().apply { remove("calendarKeys") }).calendarKeys)
+    }
+
+    @Test fun `several calendars survive a round trip, and odd stored keys fall back sensibly`() {
+        val s = Settings(calendarKeys = setOf("p:4", "w:2", "p:9"), compactCalendar = true)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+        fun withKeys(vararg keys: String) = Settings().toJson().put("calendarKeys", JSONArray(keys.toList()))
+        assertEquals(setOf(CALENDAR_ALL), Settings.fromJson(withKeys("p:4", CALENDAR_ALL)).calendarKeys)
+        assertEquals(setOf("p:4"), Settings.fromJson(withKeys(CALENDAR_AUTO, "p:4", "x:1", "p:")).calendarKeys)
+        assertEquals(setOf(CALENDAR_AUTO), Settings.fromJson(withKeys()).calendarKeys)
+        assertEquals(setOf(CALENDAR_AUTO), Settings.fromJson(withKeys("Family")).calendarKeys)
+    }
+
     @Test fun `an install from before the music section could hide gets the hiding`() {
         val old = Settings(showMusic = true).toJson().apply { remove("musicAutoHide") }
         assertEquals(true, Settings.fromJson(old).musicAutoHide)

@@ -101,8 +101,13 @@ data class Settings(
     val showSeconds: Boolean = false,
     val showDate: Boolean = true,
     val showCalendar: Boolean = false,
-    /** [CalendarInfo.key] of the single calendar shown on the home screen, or [CALENDAR_AUTO] / [CALENDAR_ALL]. */
-    val calendarKey: String = CALENDAR_AUTO,
+    /**
+     * [CalendarInfo.key]s of the calendars shown together on the home screen, or [CALENDAR_AUTO] or
+     * [CALENDAR_ALL] alone; kept in that shape by [calendarSelection].
+     */
+    val calendarKeys: Set<String> = setOf(CALENDAR_AUTO),
+    /** Smaller event text in the calendar section and next to the split clock, so more events fit. */
+    val compactCalendar: Boolean = false,
     /** The Mon-Sun strip with today marked. Off: the ring already carries the date. */
     val showWeekStrip: Boolean = false,
     /** Previous, play or pause, next, and what is playing, as a section of the home screen. */
@@ -195,7 +200,8 @@ data class Settings(
         put("showSeconds", showSeconds)
         put("showDate", showDate)
         put("showCalendar", showCalendar)
-        put("calendarKey", calendarKey)
+        put("calendarKeys", JSONArray(calendarKeys.sorted()))
+        put("compactCalendar", compactCalendar)
         put("showWeekStrip", showWeekStrip)
         put("showMusic", showMusic)
         put("musicAutoHide", musicAutoHide)
@@ -276,14 +282,21 @@ data class Settings(
                 showSeconds = o.optBoolean("showSeconds", d.showSeconds),
                 showDate = o.optBoolean("showDate", d.showDate),
                 showCalendar = o.optBoolean("showCalendar", d.showCalendar),
-                calendarKey = o.optString("calendarKey").ifEmpty {
-                    // Written for a few hours by an earlier build as a bare personal-calendar id.
-                    when (val legacy = o.optLong("calendarId", -1L)) {
-                        -1L -> CALENDAR_AUTO
-                        -2L -> CALENDAR_ALL
-                        else -> "p:$legacy"
-                    }
-                },
+                calendarKeys = calendarSelection(
+                    o.optJSONArray("calendarKeys")?.strings()
+                        // Stored before several calendars could be chosen: one key, or auto / all.
+                        ?: listOf(
+                            o.optString("calendarKey").ifEmpty {
+                                // Written for a few hours by an earlier build as a bare personal-calendar id.
+                                when (val legacy = o.optLong("calendarId", -1L)) {
+                                    -1L -> CALENDAR_AUTO
+                                    -2L -> CALENDAR_ALL
+                                    else -> "p:$legacy"
+                                }
+                            },
+                        ),
+                ),
+                compactCalendar = o.optBoolean("compactCalendar", d.compactCalendar),
                 showWeekStrip = o.optBoolean("showWeekStrip", d.showWeekStrip),
                 showMusic = o.optBoolean("showMusic", d.showMusic),
                 musicAutoHide = o.optBoolean("musicAutoHide", d.musicAutoHide),

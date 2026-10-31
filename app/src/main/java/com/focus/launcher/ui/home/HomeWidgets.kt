@@ -422,7 +422,7 @@ fun SplitScreenTime(today: DayUsage?, hasAccess: Boolean, onClick: () -> Unit, o
     }
 }
 
-/** Right half of the split clock: the next events of the one calendar, two lines each. */
+/** Right half of the split clock: the next events of the chosen calendars, two lines each; [compact] in smaller text. */
 @Composable
 fun SplitCalendar(
     today: LocalDate,
@@ -433,6 +433,7 @@ fun SplitCalendar(
     onLongPress: () -> Unit,
     onRequestAccess: () -> Unit,
     maxEvents: Int = 2,
+    compact: Boolean = false,
 ) {
     val c = LocalFocusColors.current
     val res = LocalResources.current
@@ -446,9 +447,9 @@ fun SplitCalendar(
             !hasAccess -> T(stringResource(R.string.home_calendar_show_events), size = 14.sp, color = c.dim, maxLines = 2, lineHeight = 20.sp)
             events.isEmpty() -> T(stringResource(R.string.home_calendar_empty), size = 14.sp, color = c.dim, maxLines = 2, lineHeight = 20.sp)
             else -> events.take(maxEvents).forEachIndexed { i, event ->
-                if (i > 0) VSpace(8.dp)
-                T(eventWhen(res, event, today, use24h), size = 12.sp, color = c.dim, maxLines = 1)
-                T(event.title, size = 15.sp, maxLines = 1)
+                if (i > 0) VSpace(if (compact) 3.dp else 8.dp)
+                T(eventWhen(res, event, today, use24h), size = if (compact) 10.sp else 12.sp, color = c.dim, maxLines = 1)
+                T(event.title, size = if (compact) 12.sp else 15.sp, maxLines = 1)
             }
         }
     }
@@ -941,8 +942,9 @@ private fun openPlayer(context: Context, controller: MediaController) {
 }
 
 /**
- * A short agenda from one calendar: the next few events, as text. The Mon-Sun strip with today
- * marked is optional and off by default, since the clock above already carries the date.
+ * A short agenda from the chosen calendars: the next few events, as text; [compact] in smaller
+ * text and tighter rows. The Mon-Sun strip with today marked is optional and off by default,
+ * since the clock above already carries the date.
  */
 @Composable
 fun CalendarWidget(
@@ -955,6 +957,7 @@ fun CalendarWidget(
     onRequestAccess: () -> Unit,
     modifier: Modifier = Modifier,
     maxEvents: Int = 3,
+    compact: Boolean = false,
     calendarName: String? = null,
     showWeekStrip: Boolean = false,
 ) {
@@ -965,7 +968,7 @@ fun CalendarWidget(
             Label(stringResource(R.string.home_calendar_title), Modifier.weight(1f), color = c.fg)
             if (calendarName != null && hasAccess) T(calendarName, size = 12.sp, color = c.faint, maxLines = 1)
         }
-        VSpace(10.dp)
+        VSpace(if (compact) 5.dp else 10.dp)
         if (showWeekStrip) {
             WeekStrip(today, mondayStart)
             VSpace(10.dp)
@@ -974,9 +977,10 @@ fun CalendarWidget(
             !hasAccess -> T(stringResource(R.string.home_calendar_show_events), Modifier.clickable(onClick = onRequestAccess).padding(vertical = 4.dp), size = 14.sp, color = c.dim)
             events.isEmpty() -> T(stringResource(R.string.home_calendar_empty), size = 14.sp, color = c.dim)
             else -> for (event in events.take(maxEvents)) {
-                Row(Modifier.padding(vertical = 3.dp)) {
-                    T(eventWhen(res, event, today, use24h), Modifier.width(118.dp), size = 14.sp, color = c.dim, maxLines = 1)
-                    T(event.title, Modifier.weight(1f), size = 14.sp, maxLines = 1)
+                val textSize = if (compact) 11.sp else 14.sp
+                Row(Modifier.padding(vertical = if (compact) 1.dp else 3.dp)) {
+                    T(eventWhen(res, event, today, use24h), Modifier.width(if (compact) 100.dp else 118.dp), size = textSize, color = c.dim, maxLines = 1)
+                    T(event.title, Modifier.weight(1f), size = textSize, maxLines = 1)
                 }
             }
         }

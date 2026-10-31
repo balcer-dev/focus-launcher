@@ -27,7 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focus.launcher.R
 import com.focus.launcher.data.CALENDAR_ALL
+import com.focus.launcher.data.CALENDAR_AUTO
 import com.focus.launcher.data.CalendarInfo
+import com.focus.launcher.data.calendarSelection
+import com.focus.launcher.data.isCalendarKey
+import com.focus.launcher.ui.components.DialogButtons
 import com.focus.launcher.ui.components.FocusDialog
 import com.focus.launcher.ui.components.Hairline
 import com.focus.launcher.ui.components.T
@@ -35,22 +39,29 @@ import com.focus.launcher.ui.components.UnderlinedField
 import com.focus.launcher.ui.theme.LocalFocusColors
 
 /**
- * Picks the one calendar shown on the home screen. Phones with a few Google accounts easily carry
- * a dozen calendars, half of them called "Holidays", so the list can be searched by calendar or
- * account name, and every entry says how many events it has coming up: the quickest way to
- * recognise the one you live in.
+ * Picks the calendars shown together on the home screen, or the automatic choice, or all of them;
+ * the choice is kept on Done. Phones with a few Google accounts easily carry a dozen calendars,
+ * half of them called "Holidays", so the list can be searched by calendar or account name, and
+ * every entry says how many events it has coming up: the quickest way to recognise the ones you
+ * live in.
  */
 @Composable
 internal fun CalendarPickerDialog(
     calendars: List<CalendarInfo>,
     upcomingCounts: Map<String, Int>,
-    selectedKey: String?,
+    selectedKeys: Set<String>,
     workProfileBlocked: Boolean,
     onDismiss: () -> Unit,
-    onPick: (String) -> Unit,
+    onPick: (Set<String>) -> Unit,
 ) {
     val c = LocalFocusColors.current
     var query by remember { mutableStateOf(TextFieldValue("")) }
+    // Ticked calendars that are not listed right now (a paused Work profile) stay ticked, so they
+    // come back with their calendars. While none of the ticked ones is listed, the automatic
+    // choice stands in on the home screen, and the list says so.
+    var current by remember { mutableStateOf(calendarSelection(selectedKeys)) }
+    val listedKeys = remember(calendars) { calendars.map { it.key }.toSet() }
+    val automatic = CALENDAR_ALL !in current && current.none { it in listedKeys }
     val shown = remember(calendars, query.text) {
         val q = query.text.trim()
         if (q.isEmpty()) calendars
@@ -89,10 +100,10 @@ internal fun CalendarPickerDialog(
                     name = calendar.name,
                     account = calendar.account.takeIf { it.isNotEmpty() && it != calendar.name },
                     detail = if (count > 0) pluralStringResource(R.plurals.settings_calendar_upcoming, count, count) else stringResource(R.string.settings_calendar_empty),
-                    selected = calendar.key == selectedKey,
+                    selected = calendar.key in current,
                 ) {
-                    onPick(calendar.key)
-                    onDismiss()
+                    val ticked = current.filter(::isCalendarKey).toSet()
+                    current = calendarSelection(if (calendar.key in ticked) ticked - calendar.key else ticked + calendar.key)
                 }
             }
             if (shown.isEmpty()) {
@@ -101,13 +112,24 @@ internal fun CalendarPickerDialog(
                 }
             }
             if (query.text.isBlank()) {
+                item(key = "auto") {
+                    CalendarRow(
+                        stringResource(R.string.settings_calendar_auto),
+                        account = stringResource(R.string.settings_calendar_auto_summary),
+                        detail = null,
+                        selected = automatic,
+                    ) { current = setOf(CALENDAR_AUTO) }
+                }
                 item(key = "all") {
-                    CalendarRow(stringResource(R.string.settings_calendar_all_together), account = null, detail = null, selected = selectedKey == CALENDAR_ALL) {
-                        onPick(CALENDAR_ALL)
-                        onDismiss()
+                    CalendarRow(stringResource(R.string.settings_calendar_all_together), account = null, detail = null, selected = CALENDAR_ALL in current) {
+                        current = setOf(CALENDAR_ALL)
                     }
                 }
             }
+        }
+        DialogButtons(onDismiss, confirmLabel = stringResource(R.string.common_done)) {
+            onPick(current)
+            onDismiss()
         }
     }
 }

@@ -4,9 +4,11 @@ import android.Manifest
 import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.UserManager
 import android.provider.CalendarContract
+import android.util.Log
 import com.focus.launcher.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,9 +17,21 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 
-/** [Settings.calendarKey] values that are not a real calendar; real ones are [CalendarInfo.key]. */
+/** [Settings.calendarKeys] values that are not a real calendar; real ones are [CalendarInfo.key]. */
 const val CALENDAR_AUTO = "auto"
 const val CALENDAR_ALL = "all"
+
+/** True for a [CalendarInfo.key] ("p:12", "w:3"); false for [CALENDAR_AUTO], [CALENDAR_ALL] and anything else. */
+fun isCalendarKey(key: String): Boolean =
+    key.length > 2 && (key[0] == 'p' || key[0] == 'w') && key[1] == ':' && key.substring(2).toLongOrNull() != null
+
+/**
+ * [keys] the way [Settings.calendarKeys] holds them: [CALENDAR_ALL] alone, else the [CalendarInfo.key]s
+ * of the chosen calendars, else [CALENDAR_AUTO] alone. Anything else (a hand-edited backup) is dropped.
+ */
+fun calendarSelection(keys: Collection<String>): Set<String> =
+    if (CALENDAR_ALL in keys) setOf(CALENDAR_ALL)
+    else keys.filter(::isCalendarKey).toSet().ifEmpty { setOf(CALENDAR_AUTO) }
 
 data class CalEvent(
     val title: String,
@@ -49,8 +63,11 @@ data class CalendarInfo(
     val shortName: String get() = if ('@' in name) name.substringBefore('@') else name
 }
 
-/** What the home screen's calendar section shows: one calendar (null = all) and its next events. */
-class Agenda(val key: String, val calendar: CalendarInfo?, val events: List<CalEvent>, val loadedAt: Long)
+/**
+ * What the home screen's calendar section shows for the setting [keys]: the calendars read (empty =
+ * all together) and their next events, at most [max].
+ */
+class Agenda(val keys: Set<String>, val max: Int, val calendars: List<CalendarInfo>, val events: List<CalEvent>, val loadedAt: Long)
 
 object CalendarRepository {
     @Volatile
@@ -62,19 +79,20 @@ object CalendarRepository {
     }
 
     /**
-     * The agenda for the calendar setting [key]. Working it out takes three provider queries
-     * (list calendars, count events to find the lived-in one, read the next events), and a launcher
-     * comes back to its home screen a hundred times a day, so the answer is kept until the
+     * The next [max] events for the calendar setting [keys]. Working them out takes a few provider
+     * queries (list calendars, count events to find the lived-in one, read the next events), and a
+     * launcher comes back to its home screen a hundred times a day, so the answer is kept until the
      * calendar actually changes ([invalidate]), an event in it ends, or it is ten minutes old.
      */
-    suspend fun agenda(context: Context, key: String): Agenda {
+    suspend fun agenda(context: Context, keys: Set<String>, max: Int = 3): Agenda {
         val now = System.currentTimeMillis()
         cachedAgenda?.let { cached ->
-            val fresh = cached.key == key && now - cached.loadedAt < AGENDA_MAX_AGE_MS && cached.events.none { !it.allDay && it.end < now }
+            val fresh = cached.keys == keys && cached.max == max && now - cached.loadedAt < AGENDA_MAX_AGE_MS &&
+                cached.events.none { !it.allDay && it.end < now }
             if (fresh) return cached
         }
-        val calendar = choose(context, key, calendars(context))
-        return Agenda(key, calendar, upcoming(context, calendar), now).also { cachedAgenda = it }
+        val shown = choose(context, keys, calendars(context))
+        return Agenda(keys, max, shown, upcoming(context, shown, max), now).also { cachedAgenda = it }
     }
 
     private const val AGENDA_MAX_AGE_MS = 10 * 60_000L
@@ -146,14 +164,15 @@ object CalendarRepository {
     }
 
     /**
-     * Which single calendar the home screen shows: the one picked in settings, or, until the user
-     * picks, the main calendar that actually has something coming up. (The first primary calendar
-     * is often an empty "local account" or an old address.) Null means "all calendars together".
+     * Which calendars the home screen shows: the ones picked in settings, or, until the user picks,
+     * the main calendar that actually has something coming up. (The first primary calendar is often
+     * an empty "local account" or an old address.) Picked calendars that are not there right now,
+     * such as those of a paused Work profile, are left out; with none left, the automatic choice
+     * stands in. An empty list means "all calendars together".
      */
-    suspend fun choose(context: Context, key: String, available: List<CalendarInfo>): CalendarInfo? = when (key) {
-        CALENDAR_ALL -> null
-        CALENDAR_AUTO -> busiest(context, available)
-        else -> available.firstOrNull { it.key == key } ?: busiest(context, available)
+    suspend fun choose(context: Context, keys: Set<String>, available: List<CalendarInfo>): List<CalendarInfo> {
+        if (CALENDAR_ALL in keys) return emptyList()
+        return available.filter { it.key in keys }.ifEmpty { listOfNotNull(busiest(context, available)) }
     }
 
     private suspend fun busiest(context: Context, available: List<CalendarInfo>): CalendarInfo? {
@@ -190,57 +209,77 @@ object CalendarRepository {
         out
     }
 
-    /** The next few events, soonest first, from [calendar] (null = every visible personal calendar). */
-    suspend fun upcoming(context: Context, calendar: CalendarInfo?, max: Int = 3, daysAhead: Int = 7): List<CalEvent> =
+    /** The next [max] events, soonest first, from [calendars] (empty = every visible personal calendar). */
+    suspend fun upcoming(context: Context, calendars: List<CalendarInfo>, max: Int = 3, daysAhead: Int = 7): List<CalEvent> =
         withContext(Dispatchers.IO) {
             if (!hasAccess(context)) return@withContext emptyList()
             val now = System.currentTimeMillis()
-            val work = calendar?.work == true && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-            val base = if (work) CalendarContract.Instances.ENTERPRISE_CONTENT_URI else CalendarContract.Instances.CONTENT_URI
-            val uri = base.buildUpon().also {
-                ContentUris.appendId(it, now)
-                ContentUris.appendId(it, now + daysAhead * 86_400_000L)
-            }.build()
-            val calendarId = calendar?.id
-            // The cross-profile door only admits a short list of columns, so keep its query minimal.
-            val selection = buildString {
-                // "Visible" is a switch inside the calendar app. It filters the everything-together
-                // view, but a calendar the user picked here by name is shown regardless.
-                if (calendar == null) append("${CalendarContract.Instances.VISIBLE} = 1")
-                if (calendarId != null) append(if (isEmpty()) "" else " AND ").append("${CalendarContract.Instances.CALENDAR_ID} = ?")
-            }.ifEmpty { null }
+            val until = now + daysAhead * 86_400_000L
+            // "Visible" is a switch inside the calendar app. It filters the everything-together
+            // view, but calendars the user picked here by name are shown regardless.
+            if (calendars.isEmpty()) return@withContext instances(context, CalendarContract.Instances.CONTENT_URI, now, until, ids = null, max)
+            // Personal and work calendars sit behind separate doors with separate ids: one query
+            // for each, each stopping at [max], then the soonest [max] of the two.
+            val (work, personal) = calendars.partition { it.work }
             val out = ArrayList<CalEvent>()
-            try {
-                context.contentResolver.query(
-                    uri,
-                    arrayOf(
-                        CalendarContract.Instances.TITLE,
-                        CalendarContract.Instances.BEGIN,
-                        CalendarContract.Instances.END,
-                        CalendarContract.Instances.ALL_DAY,
-                    ),
-                    selection,
-                    calendarId?.let { arrayOf(it.toString()) },
-                    "${CalendarContract.Instances.BEGIN} ASC",
-                )?.use { c ->
-                    val today = LocalDate.now()
-                    while (c.moveToNext() && out.size < max) {
-                        val event = CalEvent(
-                            title = stripEmoji(c.getString(0).orEmpty()).ifEmpty { context.getString(R.string.calendar_no_title) },
-                            begin = c.getLong(1),
-                            end = c.getLong(2),
-                            allDay = c.getInt(3) != 0,
-                        )
-                        // Skip all-day entries that really belong to yesterday (UTC storage quirk).
-                        if (event.allDay && event.date().isBefore(today)) continue
-                        if (!event.allDay && event.end < now) continue
-                        out += event
-                    }
-                }
-            } catch (_: Exception) {
+            if (personal.isNotEmpty()) {
+                out += instances(context, CalendarContract.Instances.CONTENT_URI, now, until, personal.map { it.id }, max)
             }
-            out
+            if (work.isNotEmpty() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                out += instances(context, CalendarContract.Instances.ENTERPRISE_CONTENT_URI, now, until, work.map { it.id }, max)
+            }
+            out.sortedBy { it.begin }.take(max)
         }
+
+    /**
+     * Up to [max] events between [from] and [until] behind [base], soonest first: from the
+     * calendars [ids], or with null, from every visible one. The ids are bound as arguments.
+     */
+    private fun instances(context: Context, base: Uri, from: Long, until: Long, ids: List<Long>?, max: Int): List<CalEvent> {
+        if (ids != null && ids.isEmpty()) return emptyList()
+        val uri = base.buildUpon().also {
+            ContentUris.appendId(it, from)
+            ContentUris.appendId(it, until)
+        }.build()
+        val selection = if (ids == null) "${CalendarContract.Instances.VISIBLE} = 1"
+        else "${CalendarContract.Instances.CALENDAR_ID} IN (${ids.joinToString(",") { "?" }})"
+        val out = ArrayList<CalEvent>()
+        try {
+            // The cross-profile door only admits a short list of columns, so keep its query minimal.
+            context.contentResolver.query(
+                uri,
+                arrayOf(
+                    CalendarContract.Instances.TITLE,
+                    CalendarContract.Instances.BEGIN,
+                    CalendarContract.Instances.END,
+                    CalendarContract.Instances.ALL_DAY,
+                ),
+                selection,
+                ids?.map { it.toString() }?.toTypedArray(),
+                "${CalendarContract.Instances.BEGIN} ASC",
+            )?.use { c ->
+                val today = LocalDate.now()
+                while (c.moveToNext() && out.size < max) {
+                    val event = CalEvent(
+                        title = stripEmoji(c.getString(0).orEmpty()).ifEmpty { context.getString(R.string.calendar_no_title) },
+                        begin = c.getLong(1),
+                        end = c.getLong(2),
+                        allDay = c.getInt(3) != 0,
+                    )
+                    // Skip all-day entries that really belong to yesterday (UTC storage quirk).
+                    if (event.allDay && event.date().isBefore(today)) continue
+                    if (!event.allDay && event.end < from) continue
+                    out += event
+                }
+            }
+        } catch (e: Exception) {
+            // The section then reads "nothing coming up"; the log says why.
+            Log.w(TAG, "calendar events could not be read from $base", e)
+        }
+        return out
+    }
+
+    private const val TAG = "CalendarRepository"
 
     /**
      * Removes emoji and the invisible characters that glue them together. The launcher is text in
