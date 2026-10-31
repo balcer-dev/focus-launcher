@@ -5,7 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.focus.launcher.data.Tip
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.focus.launcher.ui.components.ConfirmDialog
 import com.focus.launcher.ui.components.FocusDialog
+import com.focus.launcher.ui.components.Label
 import com.focus.launcher.ui.components.MenuRow
 import com.focus.launcher.ui.components.Hairline
 import com.focus.launcher.ui.components.TextInputDialog
@@ -41,6 +43,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -85,6 +89,7 @@ import com.focus.launcher.data.TAP_CALENDAR
 import com.focus.launcher.data.TAP_NOTHING
 import com.focus.launcher.data.TAP_SCREEN_TIME
 import com.focus.launcher.data.TimeFormat
+import com.focus.launcher.data.TodoItem
 import com.focus.launcher.service.FocusAccessibilityService
 import com.focus.launcher.ui.components.AppPickerDialog
 import com.focus.launcher.ui.components.ChoiceDialog
@@ -128,6 +133,7 @@ fun HomeScreen(
     val haptics = LocalHapticFeedback.current
     // Resolved here, in composition: the double-tap handler below runs outside it.
     val doubleTapLockHint = stringResource(R.string.home_toast_double_tap_lock)
+    val todoFullHint = stringResource(R.string.home_todo_full)
     val now by rememberNow()
     // The gesture detectors below outlive recompositions, so they must call the latest callbacks.
     val openDrawer by rememberUpdatedState(onOpenDrawer)
@@ -183,6 +189,20 @@ fun HomeScreen(
     var editingNoteLink by remember { mutableStateOf(false) }
     val noteApp = remember(settings.noteApp, apps) { apps.firstOrNull { it.key == settings.noteApp } }
     var choosingSplitSide by remember { mutableStateOf(false) }
+    var showingTodos by remember { mutableStateOf(false) }
+    var addingTodo by remember { mutableStateOf(false) }
+    var removingTodo by remember { mutableStateOf<TodoItem?>(null) }
+    // Checked tasks leave a week after they were checked: looked at on every return to the home
+    // screen and at midnight, whether or not the section is on.
+    LaunchedEffect(resumeCount, now.toLocalDate()) { Graph.settings.dropExpiredTodos(System.currentTimeMillis()) }
+    // A full list says so before a task is typed in, not after.
+    val startAddingTodo: () -> Unit = {
+        if (settings.todos.size >= TodoItem.MAX_ITEMS) {
+            Toast.makeText(context, todoFullHint, Toast.LENGTH_SHORT).show()
+        } else {
+            addingTodo = true
+        }
+    }
 
     // Split clock: the section in its right half is not shown a second time further down. The
     // calendar can only sit there while the calendar section is on; otherwise it is screen time.
@@ -285,12 +305,17 @@ fun HomeScreen(
             val musicHeight = if (musicVisible) 12f + 48f + 24f * textScale else 0f
             val noteLines = if (settings.note.isBlank()) 1 else fit.maxEvents
             val note = if (settings.showNote) 20f + 14f * textScale + 8f + noteLines * 20f * textScale else 0f
-            val sectionCount = listOf(settings.showCalendar && !sideCalendar, musicVisible, settings.showNote).count { it }
+            // Title row, the tasks that fit (or the line saying there are none), and a line about the rest.
+            val activeTodos = settings.todos.count { it.checkedAt == null }
+            val todoLines = activeTodos.coerceIn(1, fit.maxEvents)
+            val todoRest = if (activeTodos > fit.maxEvents) 8f + 16f * textScale else 0f
+            val todo = if (settings.showTodo) 20f + 16f * textScale + todoLines * (6f + 20f * textScale) + todoRest + 8f else 0f
+            val sectionCount = listOf(settings.showCalendar && !sideCalendar, musicVisible, settings.showNote, settings.showTodo).count { it }
             val lines = if (sectionCount > 0) (sectionCount + 1) * 1f else 0f
             val shortcuts = if (settings.showShortcuts) 28f + 20f * textScale else 20f
             val rows = rowCount * (fit.textSp * settings.favoriteSize.scale * 1.2f * textScale + fit.padDp * 2)
             val screenTime = if (sideScreenTime) 0f else 25f + 64f * textScale // gap, title, total, share of the day
-            return clock + screenTime + noticeLines + calendar + musicHeight + note + lines + rows + shortcuts + 6f + 36f // 36 = air
+            return clock + screenTime + noticeLines + calendar + musicHeight + note + todo + lines + rows + shortcuts + 6f + 36f // 36 = air
         }
 
         val options = listOf(
@@ -386,10 +411,10 @@ fun HomeScreen(
 
             Spacer(Modifier.weight(0.8f))
 
-            // The sections, one under the other as in the owner's sketch: calendar, music, note. No
-            // boxes: a line above each and one below the last, the same line the split clock uses.
+            // The sections, one under the other as in the owner's sketch: calendar, music, note, to-do.
+            // No boxes: a line above each and one below the last, the same line the split clock uses.
             val calendarSection = settings.showCalendar && !sideCalendar
-            val anySection = calendarSection || musicVisible || settings.showNote
+            val anySection = calendarSection || musicVisible || settings.showNote || settings.showTodo
             if (calendarSection) {
                 Hairline(Modifier.padding(horizontal = 12.dp), c.faint)
                 CalendarWidget(
@@ -426,6 +451,16 @@ fun HomeScreen(
                     onOpenApp = { noteApp?.let { app -> if (settings.noteLink.isBlank() || !openLink(context, settings.noteLink, app.packageName)) onLaunch(app) } },
                     onLongClick = { Graph.state.did(Tip.SECTION_APPS); noteMenu = true },
                     modifier = Modifier.tipTarget(tip == Tip.SECTION_APPS, c.fg),
+                )
+            }
+            if (settings.showTodo) {
+                Hairline(Modifier.padding(horizontal = 12.dp), c.faint)
+                TodoSection(
+                    items = settings.todos,
+                    maxLines = fit.maxEvents,
+                    onCheck = { id -> setTodoChecked(id, System.currentTimeMillis()) },
+                    onAdd = startAddingTodo,
+                    onShowAll = { showingTodos = true },
                 )
             }
             if (anySection) Hairline(Modifier.padding(horizontal = 12.dp), c.faint)
@@ -548,6 +583,54 @@ fun HomeScreen(
             multiline = true,
         ) { text -> Graph.settings.update { it.copy(note = text) } }
     }
+    if (showingTodos) {
+        FocusDialog({ showingTodos = false }, title = stringResource(R.string.home_todo_title), subtitle = stringResource(R.string.home_todo_list_subtitle)) {
+            MenuRow(stringResource(R.string.home_todo_add_task)) {
+                showingTodos = false
+                startAddingTodo()
+            }
+            val active = settings.todos.filter { it.checkedAt == null }
+            val checked = settings.todos.filter { it.checkedAt != null }
+            LazyColumn(Modifier.weight(1f, fill = false)) {
+                // Prefixed: an id from a hand-edited backup could be anything, and a repeated key crashes the list.
+                items(active, key = { "todo:" + it.id }) { item ->
+                    MenuRow(item.text, detail = "□", maxLines = 3, onLongClick = { removingTodo = item }) { setTodoChecked(item.id, System.currentTimeMillis()) }
+                }
+                if (checked.isNotEmpty()) {
+                    item(key = "heading:checked") {
+                        Label(stringResource(R.string.home_todo_checked), Modifier.padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 4.dp))
+                    }
+                }
+                items(checked, key = { "todo:" + it.id }) { item ->
+                    MenuRow(item.text, detail = "✓", maxLines = 3, onLongClick = { removingTodo = item }) { setTodoChecked(item.id, null) }
+                }
+            }
+        }
+    }
+    removingTodo?.let { item ->
+        ConfirmDialog(
+            title = stringResource(R.string.home_todo_remove_title),
+            message = item.text,
+            confirmLabel = stringResource(R.string.home_todo_remove),
+            onDismiss = { removingTodo = null },
+        ) { Graph.settings.update { s -> s.copy(todos = s.todos.filterNot { it.id == item.id }) } }
+    }
+    if (addingTodo) {
+        TextInputDialog(
+            title = stringResource(R.string.home_todo_add_title),
+            initial = "",
+            placeholder = stringResource(R.string.home_todo_placeholder),
+            confirmLabel = stringResource(R.string.home_todo_add_confirm),
+            maxLength = TodoItem.MAX_TEXT,
+            onDismiss = { addingTodo = false },
+        ) { text ->
+            when {
+                text.isEmpty() -> Unit // nothing typed, nothing to add
+                Graph.settings.value.todos.size >= TodoItem.MAX_ITEMS -> Toast.makeText(context, todoFullHint, Toast.LENGTH_SHORT).show()
+                else -> Graph.settings.update { it.copy(todos = it.todos + TodoItem.create(text)) }
+            }
+        }
+    }
     if (choosingSplitSide) {
         ChoiceDialog(
             stringResource(R.string.home_next_to_clock),
@@ -622,6 +705,11 @@ private fun Notice(text: String, strong: Boolean, lines: Int = 1, onClick: () ->
 
 private fun setShortcut(left: Boolean, spec: String) {
     Graph.settings.update { if (left) it.copy(leftShortcut = spec) else it.copy(rightShortcut = spec) }
+}
+
+/** Checks the to-do task [id] at [at] (ms), or unchecks it when [at] is null. */
+private fun setTodoChecked(id: String, at: Long?) {
+    Graph.settings.update { s -> s.copy(todos = s.todos.map { if (it.id == id) it.copy(checkedAt = at) else it }) }
 }
 
 @Composable

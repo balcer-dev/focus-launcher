@@ -65,6 +65,26 @@
     <string name="home_note_link_subtitle">W aplikacji %1$s otwórz stronę, wybierz Udostępnij lub Kopiuj link i wklej go tutaj. Zostaw puste, by otwierać samą aplikację.</string>
     <string name="home_note_link_subtitle_generic">W aplikacji do notatek otwórz stronę, wybierz Udostępnij lub Kopiuj link i wklej go tutaj. Zostaw puste, by otwierać samą aplikację.</string>
 
+    <string name="home_todo_title">Do zrobienia</string>
+    <string name="home_todo_add">+ Dodaj</string>
+    <string name="home_todo_checked_count">Zrobione (%1$d)</string>
+    <string name="home_todo_empty">Brak zadań. Kliknij Dodaj.</string>
+    <plurals name="home_todo_more">
+        <item quantity="one">jeszcze %1$d zadanie</item>
+        <item quantity="few">jeszcze %1$d zadania</item>
+        <item quantity="many">jeszcze %1$d zadań</item>
+        <item quantity="other">jeszcze %1$d zadania</item>
+    </plurals>
+    <string name="home_todo_list_subtitle">Kliknij zadanie, by je odhaczyć lub przywrócić; przytrzymaj, by je usunąć. Zrobione zadania znikają po siedmiu dniach.</string>
+    <string name="home_todo_add_task">+ Dodaj zadanie</string>
+    <string name="home_todo_checked">Zrobione</string>
+    <string name="home_todo_add_title">Nowe zadanie</string>
+    <string name="home_todo_placeholder">Jedno zadanie</string>
+    <string name="home_todo_add_confirm">Dodaj</string>
+    <string name="home_todo_full">Lista jest pełna. Najpierw usuń jakieś zadanie.</string>
+    <string name="home_todo_remove_title">Usunąć to zadanie?</string>
+    <string name="home_todo_remove">Usuń</string>
+
     <string name="home_shortcut_left">Lewy skrót</string>
     <string name="home_shortcut_right">Prawy skrót</string>
     <string name="home_shortcut_subtitle">Otwiera się z dolnego rogu ekranu głównego.</string>

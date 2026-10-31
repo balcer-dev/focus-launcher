@@ -58,6 +58,7 @@ class SettingsMigrationTest {
             renames = mapOf("com.mail/.Main" to "Mail"), appLimits = mapOf("com.video" to 20),
             showNote = true, note = "Call mum", showSeconds = true, favoriteSize = FavoriteSize.SMALL,
             showWallpaper = true, wallpaperStamp = 1_761_900_000_000L, wallpaperVisibility = 60,
+            showTodo = true, todos = listOf(TodoItem("a", "Buy milk"), TodoItem("b", "Pay the bill", 1_761_900_000_000L)),
         )
         val file = s.toJson().toString(2)
         assertEquals(s, Settings.fromBackup(JSONObject(file)))

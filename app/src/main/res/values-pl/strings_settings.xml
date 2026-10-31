@@ -124,6 +124,8 @@
     <string name="settings_note_summary">Kilka twoich linijek, zawsze na widoku. Kliknij je na ekranie głównym, żeby pisać.</string>
     <string name="settings_notes_app">Aplikacja do notatek</string>
     <string name="settings_notes_app_summary">Słowo obok tytułu notatki, które ją otwiera. Twoje linijki i tak zostają na ekranie głównym.</string>
+    <string name="settings_todo">Lista zadań</string>
+    <string name="settings_todo_summary">Krótka lista do odhaczania na ekranie głównym. Kliknij zadanie, by je odhaczyć; zrobione znikają po siedmiu dniach.</string>
     <string name="settings_fast_apps">Szybkie aplikacje</string>
     <plurals name="settings_fast_apps_summary">
         <item quantity="one">Do %1$d aplikacji, jedno kliknięcie od ekranu głównego.</item>

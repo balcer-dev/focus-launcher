@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.offset
 import com.focus.launcher.Graph
 import com.focus.launcher.R
 import com.focus.launcher.data.AppEntry
+import com.focus.launcher.data.TodoItem
 import com.focus.launcher.data.WallpaperStore
 import com.focus.launcher.ui.components.AppPickerDialog
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import android.media.AudioManager
 import android.media.AudioAttributes
 import android.media.AudioPlaybackConfiguration
@@ -83,6 +85,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -808,6 +811,53 @@ fun NoteSection(note: String, appLabel: String?, maxLines: Int, onEdit: () -> Un
         }
         if (note.isBlank()) T(stringResource(R.string.home_note_empty), size = 14.sp, color = c.dim, maxLines = 1)
         else T(note, if (hasColourGlyphs(note)) Modifier.monochrome() else Modifier, size = 14.sp, color = c.dim, maxLines = maxLines, lineHeight = 20.sp)
+        VSpace(8.dp)
+    }
+}
+
+/**
+ * A short checklist: the tasks still to do, as many as there is room for ([maxLines]). A tap on one
+ * checks it and it leaves the home screen. The whole list, where a task is unchecked or removed, is
+ * a long-press away, and a tap on "checked" or on the line about the tasks that did not fit.
+ */
+@Composable
+fun TodoSection(
+    items: List<TodoItem>,
+    maxLines: Int,
+    onCheck: (id: String) -> Unit,
+    onAdd: () -> Unit,
+    onShowAll: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = LocalFocusColors.current
+    val active = items.filter { it.checkedAt == null }
+    val checked = items.size - active.size
+    // Brighter than the dim lines of the other sections: these are there to be done.
+    val taskColor = lerp(c.dim, c.fg, 0.45f)
+    Column(modifier.fillMaxWidth().press(onLongClick = onShowAll, onClick = onShowAll).padding(horizontal = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Label(stringResource(R.string.home_todo_title), Modifier.weight(1f).padding(vertical = 10.dp), color = c.fg)
+            if (checked > 0) {
+                T(stringResource(R.string.home_todo_checked_count, checked), Modifier.press(onLongClick = onShowAll, onClick = onShowAll).padding(10.dp), size = 12.sp, color = c.dim, maxLines = 1)
+            }
+            T(stringResource(R.string.home_todo_add), Modifier.press(onLongClick = onShowAll, onClick = onAdd).padding(start = 10.dp, top = 10.dp, bottom = 10.dp), size = 13.sp, color = c.fg, maxLines = 1)
+        }
+        if (active.isEmpty()) T(stringResource(R.string.home_todo_empty), Modifier.padding(vertical = 3.dp), size = 14.sp, color = c.dim, maxLines = 1, lineHeight = 20.sp)
+        for (item in active.take(maxLines)) {
+            Row(Modifier.fillMaxWidth().press(onLongClick = onShowAll) { onCheck(item.id) }.padding(vertical = 3.dp)) {
+                T("□", size = 14.sp, color = taskColor, maxLines = 1, lineHeight = 20.sp)
+                HSpace(10.dp)
+                T(
+                    item.text,
+                    Modifier.weight(1f).then(if (hasColourGlyphs(item.text)) Modifier.monochrome() else Modifier),
+                    size = 14.sp, color = taskColor, maxLines = 1, lineHeight = 20.sp,
+                )
+            }
+        }
+        val rest = active.size - maxLines
+        if (rest > 0) {
+            T(pluralStringResource(R.plurals.home_todo_more, rest, rest), Modifier.press(onLongClick = onShowAll, onClick = onShowAll).padding(vertical = 4.dp), size = 12.sp, color = c.dim, maxLines = 1)
+        }
         VSpace(8.dp)
     }
 }

@@ -187,6 +187,10 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             enabled = settings.showNote,
             onClick = { dialog = HomeDialog.NOTE_APP },
         )
+        ToggleRow(
+            stringResource(R.string.settings_todo), settings.showTodo,
+            subtitle = stringResource(R.string.settings_todo_summary),
+        ) { v -> update { it.copy(showTodo = v) } }
 
         Section(stringResource(R.string.settings_fast_apps))
         SettingRow(

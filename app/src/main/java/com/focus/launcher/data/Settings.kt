@@ -121,6 +121,9 @@ data class Settings(
     val noteApp: String = "",
     /** With a notes app chosen: a link to one page in it (what its "copy link" gives). Blank = the app's own start screen. */
     val noteLink: String = "",
+    /** A short checklist as a section of the home screen; a checked task is dropped [TodoItem.RETENTION_MS] later. */
+    val showTodo: Boolean = false,
+    val todos: List<TodoItem> = emptyList(),
     val homeAlign: HomeAlign = HomeAlign.CENTER,
     val favorites: List<String> = emptyList(),
     val favoriteSize: FavoriteSize = FavoriteSize.LARGE,
@@ -201,6 +204,8 @@ data class Settings(
         put("musicApp", musicApp)
         put("noteApp", noteApp)
         put("noteLink", noteLink)
+        put("showTodo", showTodo)
+        put("todos", JSONArray().apply { todos.forEach { put(it.toJson()) } })
         put("homeAlign", homeAlign.name)
         put("favorites", JSONArray(favorites))
         put("favoriteSize", favoriteSize.name)
@@ -287,6 +292,9 @@ data class Settings(
                 musicApp = o.optString("musicApp", d.musicApp),
                 noteApp = o.optString("noteApp", d.noteApp),
                 noteLink = o.optString("noteLink", d.noteLink),
+                showTodo = o.optBoolean("showTodo", d.showTodo),
+                // Not cleaned of expired tasks here: loading does not depend on the time (see SettingsStore.dropExpiredTodos).
+                todos = TodoItem.listFromJson(o.optJSONArray("todos")),
                 homeAlign = enumOr(o.optString("homeAlign"), d.homeAlign),
                 favorites = o.optJSONArray("favorites").strings().take(MAX_FAVORITES),
                 favoriteSize = enumOr(o.optString("favoriteSize"), d.favoriteSize),

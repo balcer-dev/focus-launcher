@@ -84,14 +84,22 @@ fun FocusDialog(
 }
 
 @Composable
-fun MenuRow(text: String, modifier: Modifier = Modifier, detail: String? = null, selected: Boolean = false, onClick: () -> Unit) {
+fun MenuRow(
+    text: String,
+    modifier: Modifier = Modifier,
+    detail: String? = null,
+    selected: Boolean = false,
+    maxLines: Int = 1,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
     val c = LocalFocusColors.current
     Row(
-        modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp),
+        modifier.fillMaxWidth().press(onLongClick = onLongClick, onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        T(text, Modifier.weight(1f), size = 17.sp, maxLines = 1)
+        T(text, Modifier.weight(1f), size = 17.sp, maxLines = maxLines)
         if (detail != null) T(detail, size = 14.sp, color = c.dim, maxLines = 1)
         if (selected) Box(Modifier.size(8.dp).background(c.fg, CircleShape))
     }
@@ -184,6 +192,8 @@ fun TextInputDialog(
     numeric: Boolean = false,
     /** Several lines: Enter makes a new line, "Save" is the only way to confirm. */
     multiline: Boolean = false,
+    /** Longest text the field takes; what is typed or pasted beyond it is cut off. */
+    maxLength: Int = Int.MAX_VALUE,
     onConfirm: (String) -> Unit,
 ) {
     var value by remember { mutableStateOf(TextFieldValue(initial, TextRange(0, initial.length))) }
@@ -195,7 +205,13 @@ fun TextInputDialog(
     FocusDialog(onDismiss, title, subtitle) {
         UnderlinedField(
             value = value,
-            onValueChange = { next -> value = if (numeric) next.copy(text = next.text.filter(Char::isDigit).take(4)) else next },
+            onValueChange = { next ->
+                value = when {
+                    numeric -> next.copy(text = next.text.filter(Char::isDigit).take(4))
+                    next.text.length > maxLength -> next.copy(text = next.text.take(maxLength))
+                    else -> next
+                }
+            },
             placeholder = placeholder,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp).focusRequester(focus),
             imeAction = if (multiline) ImeAction.Default else ImeAction.Done,

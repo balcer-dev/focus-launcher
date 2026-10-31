@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Home screen: the clock, today's screen time, the sections (calendar, music, note), the fast
+    Home screen: the clock, today's screen time, the sections (calendar, music, note, to-do), the fast
     apps, the corner shortcuts, and the dialogs reached from them by a long-press.
 -->
 <resources>
@@ -101,6 +101,29 @@
     <string name="home_note_link_subtitle">In %1$s, open the page, choose Share or Copy link, and paste it here. Leave it empty to open the app itself.</string>
     <!-- The same, when the notes app is not known. -->
     <string name="home_note_link_subtitle_generic">In your notes app, open the page, choose Share or Copy link, and paste it here. Leave it empty to open the app itself.</string>
+
+    <!-- To-do section: a short checklist. A checked task leaves the home screen and is dropped seven days later. -->
+    <string name="home_todo_title">To-do</string>
+    <!-- At the right of the section's title: opens the field for a new task. -->
+    <string name="home_todo_add">+ Add</string>
+    <!-- At the right of the title while some tasks are checked; opens the whole list. %1$d is how many are checked. -->
+    <string name="home_todo_checked_count">Checked (%1$d)</string>
+    <string name="home_todo_empty">No tasks yet. Tap Add.</string>
+    <!-- Under the tasks shown when the others do not fit; opens the whole list. -->
+    <plurals name="home_todo_more">
+        <item quantity="one">%1$d more task</item>
+        <item quantity="other">%1$d more tasks</item>
+    </plurals>
+    <string name="home_todo_list_subtitle">Tap a task to check or uncheck it; long-press it to remove it. Checked tasks disappear after seven days.</string>
+    <string name="home_todo_add_task">+ Add task</string>
+    <!-- Heading over the checked tasks in the whole list. -->
+    <string name="home_todo_checked">Checked</string>
+    <string name="home_todo_add_title">New task</string>
+    <string name="home_todo_placeholder">One task</string>
+    <string name="home_todo_add_confirm">Add</string>
+    <string name="home_todo_full">The list is full. Remove a task first.</string>
+    <string name="home_todo_remove_title">Remove this task?</string>
+    <string name="home_todo_remove">Remove</string>
 
     <!-- Corner shortcuts. -->
     <string name="home_shortcut_left">Left shortcut</string>

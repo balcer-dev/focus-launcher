@@ -139,6 +139,8 @@
     <string name="settings_note_summary">A few lines of your own, always in sight. Tap them on the home screen to write.</string>
     <string name="settings_notes_app">Notes app</string>
     <string name="settings_notes_app_summary">A word next to the note\'s title that opens it. Your own lines stay on the home screen either way.</string>
+    <string name="settings_todo">To-do list</string>
+    <string name="settings_todo_summary">A short checklist on the home screen. Tap a task to check it; checked tasks disappear after seven days.</string>
     <string name="settings_fast_apps">Fast apps</string>
     <!-- %1$d is the most fast apps the home screen holds (MAX_FAVORITES). -->
     <plurals name="settings_fast_apps_summary">

@@ -27,6 +27,9 @@ class SettingsStore(context: Context) {
         prefs.edit { putString(KEY, next.toJson().toString()) }
     }
 
+    /** Drops the to-do tasks checked [TodoItem.RETENTION_MS] or longer before [now] (ms). Writes nothing when none is due. */
+    fun dropExpiredTodos(now: Long) = update { it.copy(todos = it.todos.withoutExpiredTodos(now)) }
+
     /**
      * Every setting as indented JSON, for a backup file; read back with [Settings.fromBackup].
      * Permissions and screen time history are not settings, so they stay out of it.
