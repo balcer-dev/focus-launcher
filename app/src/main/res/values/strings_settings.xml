@@ -196,6 +196,10 @@
     <string name="settings_drawer_layout_summary">Grid: four apps to a row, each with a small icon.</string>
     <string name="settings_colour_icons">Colour icons</string>
     <string name="settings_colour_icons_summary">Icons in full colour instead of grey.</string>
+    <string name="settings_drawer_fast_apps">Fast apps at the top</string>
+    <string name="settings_drawer_fast_apps_summary">The home screen fast apps at the very top of the list, above the pinned ones.</string>
+    <string name="settings_drawer_fast_apps_in_list">Also in the list</string>
+    <string name="settings_drawer_fast_apps_in_list_summary">Fast apps also keep their place in the list below.</string>
     <string name="settings_recent_installs">Recently installed</string>
     <string name="settings_recent_installs_summary">Apps installed in the last 24 hours, at the top.</string>
     <string name="settings_drawer_usage">Show timer progress</string>

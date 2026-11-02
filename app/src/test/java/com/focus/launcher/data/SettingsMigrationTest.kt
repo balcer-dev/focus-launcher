@@ -119,6 +119,13 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `fast apps join the top of the app list only once asked to`() {
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("favoritesInDrawer") }).favoritesInDrawer)
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("favoritesAlsoInList") }).favoritesAlsoInList)
+        val s = Settings(favoritesInDrawer = true, favoritesAlsoInList = true)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `search forgives typos only once asked to`() {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)

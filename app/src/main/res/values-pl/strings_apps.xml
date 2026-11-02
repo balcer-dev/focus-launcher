@@ -8,6 +8,7 @@
     <string name="drawer_sort_current">Sortuj: %1$s</string>
     <string name="drawer_sort_title">Sortuj aplikacje</string>
     <string name="drawer_pinned">Przypięte</string>
+    <string name="drawer_fast_apps">Szybkie aplikacje</string>
     <string name="drawer_recent_installs">Zainstalowane w ciągu doby</string>
     <string name="drawer_all_apps">Wszystkie aplikacje</string>
     <string name="drawer_loading">Wczytywanie…</string>

@@ -100,9 +100,10 @@ private const val GRID_COLUMNS = 4
 private val ICON_SIZE = 40.dp
 
 /**
- * Page two of the launcher: a search bar, the pinned apps, the apps installed in the last 24 hours,
- * and every other app as a plain list. With a work profile the list splits into Personal / Work tabs;
- * "Sort" orders it A–Z, by most used or by last used, below the pinned apps. Search always covers
+ * Page two of the launcher: a search bar, optionally the home screen's fast apps, the pinned apps,
+ * the apps installed in the last 24 hours, and every other app as a plain list. With a work profile
+ * the list splits into Personal / Work tabs; "Sort" orders it A–Z, by most used or by last used,
+ * below the pinned apps. Search always covers
  * both profiles and ranks by match, pinned or not. No icons, unless the grid view is chosen in
  * settings: the same sections, four apps to a row with small icons, grey unless colour is chosen too.
  * Long-press an app for its menu.
@@ -172,36 +173,51 @@ fun DrawerScreen(
             DrawerSort.RECENT -> inProfile.sortedByDescending { if (it.isWorkProfile) 0L else stats[it.packageName]?.second ?: 0L }
         }
     }
-    // Pinned apps of this tab, in the order they were pinned. Keys of apps that are gone or hidden find nothing.
-    val pinnedApps = remember(inProfile, settings.pinned) {
-        val byKey = inProfile.associateBy { it.key }
-        settings.pinned.mapNotNull { byKey[it] }
+    // Optional, and first of all: the home screen's fast apps of this tab, in their order there.
+    // Keys of apps that are gone or hidden find nothing, here as with the pins.
+    val favoriteApps = remember(inProfile, settings.favorites, settings.favoritesInDrawer) {
+        if (!settings.favoritesInDrawer) emptyList()
+        else {
+            val byKey = inProfile.associateBy { it.key }
+            settings.favorites.mapNotNull { byKey[it] }
+        }
     }
-    // Search ignores tab, sort and pins: it looks through both profiles and ranks by match.
-    // Without a query the list is everything not already pinned above it.
-    val results = remember(visible, sorted, settings.pinned, query, searchNames, settings.typoSearch) {
-        if (query.isBlank()) sorted.filter { it.key !in settings.pinned }
+    // Pinned apps of this tab, in the order they were pinned. One that is a fast app too is listed once, with those.
+    val pinnedApps = remember(inProfile, settings.pinned, favoriteApps) {
+        val byKey = inProfile.associateBy { it.key }
+        val fast = favoriteApps.mapTo(HashSet()) { it.key }
+        settings.pinned.filter { it !in fast }.mapNotNull { byKey[it] }
+    }
+    // Every app already listed above the main list. The recent installs leave all of them out; the
+    // main list too, except the fast apps when they are to keep their place in it as well.
+    val above = remember(settings.pinned, favoriteApps) { settings.pinned.toSet() + favoriteApps.map { it.key } }
+    val leftOut = if (settings.favoritesAlsoInList) settings.pinned.toSet() else above
+    // Search ignores tab, sort, pins and fast apps: it looks through both profiles and ranks by match.
+    // Without a query the list is everything not already above it.
+    val results = remember(visible, sorted, leftOut, query, searchNames, settings.typoSearch) {
+        if (query.isBlank()) sorted.filter { it.key !in leftOut }
         else searchApps(visible, query, searchNames, typos = settings.typoSearch)
     }
-    val recent = remember(inProfile, settings.showRecentInstalls, settings.pinned) {
+    val recent = remember(inProfile, settings.showRecentInstalls, above) {
         if (!settings.showRecentInstalls) emptyList()
         else {
             val cutoff = System.currentTimeMillis() - DAY_MS
-            inProfile.filter { it.firstInstallTime >= cutoff && it.packageName != Graph.app.packageName && it.key !in settings.pinned }
+            inProfile.filter { it.firstInstallTime >= cutoff && it.packageName != Graph.app.packageName && it.key !in above }
                 .sortedByDescending { it.firstInstallTime }
         }
     }
-    // Pinned and recent apps come under their own labels; "All apps" then opens the main list, if anything is left for it.
-    val allAppsLabel = !searching && results.isNotEmpty() && (pinnedApps.isNotEmpty() || recent.isNotEmpty())
-    // Number of list items that come before the alphabetical block (section labels, pinned and recent apps).
+    // Pinned, fast and recent apps come under their own labels; "All apps" then opens the main list, if anything is left for it.
+    val allAppsLabel = !searching && results.isNotEmpty() && (pinnedApps.isNotEmpty() || favoriteApps.isNotEmpty() || recent.isNotEmpty())
+    // Number of list items that come before the alphabetical block (section labels, pinned, fast and recent apps).
     val leadingItems = if (searching) 0 else {
         (if (pinnedApps.isNotEmpty()) pinnedApps.size + 1 else 0) +
+            (if (favoriteApps.isNotEmpty()) favoriteApps.size + 1 else 0) +
             (if (recent.isNotEmpty()) recent.size + 1 else 0) +
             (if (allAppsLabel) 1 else 0)
     }
-    // With every app of the tab pinned the main list is empty, but the drawer is not.
+    // With every app of the tab pinned (or a fast app) the main list is empty, but the drawer is not.
     val emptyText = when {
-        results.isNotEmpty() || (!searching && pinnedApps.isNotEmpty()) -> null
+        results.isNotEmpty() || (!searching && (pinnedApps.isNotEmpty() || favoriteApps.isNotEmpty())) -> null
         !loaded -> stringResource(R.string.drawer_loading)
         searching -> stringResource(R.string.drawer_no_match, query.trim())
         else -> stringResource(R.string.drawer_no_apps)
@@ -306,17 +322,25 @@ fun DrawerScreen(
             val showIndex = !searching && sort == DrawerSort.ALPHA && letters.size > 5 && maxHeight > (letters.size * 15).dp
 
             if (grid) {
-                AppGrid(gridState, settings, today, pinnedApps, recent, results, allAppsLabel, searching, emptyText, showIndex, onLaunch, onAppMenu)
+                AppGrid(gridState, settings, today, favoriteApps, pinnedApps, recent, results, allAppsLabel, searching, emptyText, showIndex, onLaunch, onAppMenu)
             } else {
                 LazyColumn(Modifier.fillMaxSize(), state = listState) {
+                    if (!searching && favoriteApps.isNotEmpty()) {
+                        item(key = "label:favorites") { SectionLabel(stringResource(R.string.drawer_fast_apps)) }
+                        items(favoriteApps, key = { "favorite:" + it.key }) { app ->
+                            AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                        }
+                    }
                     if (!searching && pinnedApps.isNotEmpty()) {
-                        item(key = "label:pinned") { SectionLabel(stringResource(R.string.drawer_pinned)) }
+                        item(key = "label:pinned") { SectionLabel(stringResource(R.string.drawer_pinned), top = if (favoriteApps.isNotEmpty()) 22 else 10) }
                         items(pinnedApps, key = { "pinned:" + it.key }) { app ->
                             AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
                         }
                     }
                     if (!searching && recent.isNotEmpty()) {
-                        item(key = "label:recent") { SectionLabel(stringResource(R.string.drawer_recent_installs), top = if (pinnedApps.isNotEmpty()) 22 else 10) }
+                        item(key = "label:recent") {
+                            SectionLabel(stringResource(R.string.drawer_recent_installs), top = if (pinnedApps.isNotEmpty() || favoriteApps.isNotEmpty()) 22 else 10)
+                        }
                         items(recent, key = { "recent:" + it.key }) { app ->
                             AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
                         }
@@ -458,6 +482,7 @@ private fun AppGrid(
     state: LazyGridState,
     settings: Settings,
     today: DayUsage?,
+    favoriteApps: List<AppEntry>,
     pinnedApps: List<AppEntry>,
     recent: List<AppEntry>,
     results: List<AppEntry>,
@@ -477,15 +502,26 @@ private fun AppGrid(
         contentPadding = PaddingValues(start = 18.dp, end = if (indexShown) 34.dp else 18.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        if (!searching && favoriteApps.isNotEmpty()) {
+            item(key = "label:favorites", span = { GridItemSpan(maxLineSpan) }) { SectionLabel(stringResource(R.string.drawer_fast_apps), start = 12) }
+            items(favoriteApps, key = { "favorite:" + it.key }) { app ->
+                AppTile(app, settings, today, onLaunch, onAppMenu)
+            }
+        }
         if (!searching && pinnedApps.isNotEmpty()) {
-            item(key = "label:pinned", span = { GridItemSpan(maxLineSpan) }) { SectionLabel(stringResource(R.string.drawer_pinned), start = 12) }
+            item(key = "label:pinned", span = { GridItemSpan(maxLineSpan) }) {
+                SectionLabel(stringResource(R.string.drawer_pinned), top = if (favoriteApps.isNotEmpty()) 22 else 10, start = 12)
+            }
             items(pinnedApps, key = { "pinned:" + it.key }) { app ->
                 AppTile(app, settings, today, onLaunch, onAppMenu)
             }
         }
         if (!searching && recent.isNotEmpty()) {
             item(key = "label:recent", span = { GridItemSpan(maxLineSpan) }) {
-                SectionLabel(stringResource(R.string.drawer_recent_installs), top = if (pinnedApps.isNotEmpty()) 22 else 10, start = 12)
+                SectionLabel(
+                    stringResource(R.string.drawer_recent_installs),
+                    top = if (pinnedApps.isNotEmpty() || favoriteApps.isNotEmpty()) 22 else 10, start = 12,
+                )
             }
             items(recent, key = { "recent:" + it.key }) { app ->
                 AppTile(app, settings, today, onLaunch, onAppMenu)

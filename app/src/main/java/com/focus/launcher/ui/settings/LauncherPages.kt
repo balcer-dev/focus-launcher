@@ -403,6 +403,15 @@ internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> 
             ) { v -> update { it.copy(colourIcons = v) } }
         }
         ToggleRow(
+            stringResource(R.string.settings_drawer_fast_apps), settings.favoritesInDrawer,
+            subtitle = stringResource(R.string.settings_drawer_fast_apps_summary),
+        ) { v -> update { it.copy(favoritesInDrawer = v) } }
+        ToggleRow(
+            stringResource(R.string.settings_drawer_fast_apps_in_list), settings.favoritesAlsoInList,
+            subtitle = stringResource(R.string.settings_drawer_fast_apps_in_list_summary),
+            enabled = settings.favoritesInDrawer,
+        ) { v -> update { it.copy(favoritesAlsoInList = v) } }
+        ToggleRow(
             stringResource(R.string.settings_recent_installs), settings.showRecentInstalls,
             subtitle = stringResource(R.string.settings_recent_installs_summary),
         ) { v -> update { it.copy(showRecentInstalls = v) } }
