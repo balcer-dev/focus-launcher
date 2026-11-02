@@ -321,9 +321,9 @@ fun HomeScreen(
             val noteLines = if (settings.note.isBlank()) 1 else fit.maxEvents
             val note = if (settings.showNote) 20f + 14f * textScale + 8f + noteLines * 20f * textScale else 0f
             // Title row, the tasks that fit (or the line saying there are none), and a line about the rest.
-            val activeTodos = settings.todos.count { it.checkedAt == null }
-            val todoLines = activeTodos.coerceIn(1, fit.maxEvents)
-            val todoRest = if (activeTodos > fit.maxEvents) 8f + 16f * textScale else 0f
+            val shownTodos = if (settings.showCheckedTodos) settings.todos.size else settings.todos.count { it.checkedAt == null }
+            val todoLines = shownTodos.coerceIn(1, fit.maxEvents)
+            val todoRest = if (shownTodos > fit.maxEvents) 8f + 16f * textScale else 0f
             val todo = if (settings.showTodo) 20f + 16f * textScale + todoLines * (6f + 20f * textScale) + todoRest + 8f else 0f
             val sectionCount = listOf(settings.showCalendar && !sideCalendar, musicVisible, settings.showNote, settings.showTodo).count { it }
             val lines = if (sectionCount > 0) (sectionCount + 1) * 1f else 0f
@@ -481,7 +481,9 @@ fun HomeScreen(
                 TodoSection(
                     items = settings.todos,
                     maxLines = fit.maxEvents,
+                    showChecked = settings.showCheckedTodos,
                     onCheck = { id -> setTodoChecked(id, System.currentTimeMillis()) },
+                    onUncheck = { id -> setTodoChecked(id, null) },
                     onAdd = startAddingTodo,
                     onShowAll = { showingTodos = true },
                 )

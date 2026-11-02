@@ -204,6 +204,11 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             stringResource(R.string.settings_todo), settings.showTodo,
             subtitle = stringResource(R.string.settings_todo_summary),
         ) { v -> update { it.copy(showTodo = v) } }
+        ToggleRow(
+            stringResource(R.string.settings_todo_show_checked), settings.showCheckedTodos,
+            subtitle = stringResource(R.string.settings_todo_show_checked_summary),
+            enabled = settings.showTodo,
+        ) { v -> update { it.copy(showCheckedTodos = v) } }
 
         Section(stringResource(R.string.settings_fast_apps))
         SettingRow(

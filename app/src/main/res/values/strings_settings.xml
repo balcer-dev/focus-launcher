@@ -150,6 +150,8 @@
     <string name="settings_notes_app_summary">A word next to the note\'s title that opens it. Your own lines stay on the home screen either way.</string>
     <string name="settings_todo">To-do list</string>
     <string name="settings_todo_summary">A short checklist on the home screen. Tap a task to check it; checked tasks disappear after seven days.</string>
+    <string name="settings_todo_show_checked">Show checked tasks</string>
+    <string name="settings_todo_show_checked_summary">They stay on the home screen, crossed out, until they disappear after seven days. Tap one to uncheck it.</string>
     <string name="settings_fast_apps">Fast apps</string>
     <string name="settings_fast_apps_on_home">Show on the home screen</string>
     <string name="settings_fast_apps_on_home_summary">Turned off, they can still be shown at the top of the app list.</string>

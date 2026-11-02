@@ -136,6 +136,8 @@
     <string name="settings_notes_app_summary">Słowo obok tytułu notatki, które ją otwiera. Twoje linijki i tak zostają na ekranie głównym.</string>
     <string name="settings_todo">Lista zadań</string>
     <string name="settings_todo_summary">Krótka lista do odhaczania na ekranie głównym. Kliknij zadanie, by je odhaczyć; zrobione znikają po siedmiu dniach.</string>
+    <string name="settings_todo_show_checked">Pokazuj zrobione</string>
+    <string name="settings_todo_show_checked_summary">Zostają na ekranie głównym, przekreślone, aż znikną po siedmiu dniach. Kliknięcie przywraca zadanie.</string>
     <string name="settings_fast_apps">Szybkie aplikacje</string>
     <string name="settings_fast_apps_on_home">Pokazuj na ekranie głównym</string>
     <string name="settings_fast_apps_on_home_summary">Wyłączone mogą nadal być na górze listy aplikacji.</string>

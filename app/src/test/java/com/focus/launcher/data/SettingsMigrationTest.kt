@@ -139,6 +139,12 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `checked tasks leave the home screen unless asked to stay`() {
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("showCheckedTodos") }).showCheckedTodos)
+        val s = Settings(showTodo = true, showCheckedTodos = true)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `search forgives typos only once asked to`() {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)

@@ -138,6 +138,8 @@ data class Settings(
     val noteLink: String = "",
     /** A short checklist as a section of the home screen; a checked task is dropped [TodoItem.RETENTION_MS] later. */
     val showTodo: Boolean = false,
+    /** Checked tasks stay in the home screen section too, crossed out, so a tap there unchecks them. */
+    val showCheckedTodos: Boolean = false,
     val todos: List<TodoItem> = emptyList(),
     val homeAlign: HomeAlign = HomeAlign.CENTER,
     val favorites: List<String> = emptyList(),
@@ -248,6 +250,7 @@ data class Settings(
         put("noteApp", noteApp)
         put("noteLink", noteLink)
         put("showTodo", showTodo)
+        put("showCheckedTodos", showCheckedTodos)
         put("todos", JSONArray().apply { todos.forEach { put(it.toJson()) } })
         put("homeAlign", homeAlign.name)
         put("favorites", JSONArray(favorites))
@@ -355,6 +358,7 @@ data class Settings(
                 noteApp = o.optString("noteApp", d.noteApp),
                 noteLink = o.optString("noteLink", d.noteLink),
                 showTodo = o.optBoolean("showTodo", d.showTodo),
+                showCheckedTodos = o.optBoolean("showCheckedTodos", d.showCheckedTodos),
                 // Not cleaned of expired tasks here: loading does not depend on the time (see SettingsStore.dropExpiredTodos).
                 todos = TodoItem.listFromJson(o.optJSONArray("todos")),
                 homeAlign = enumOr(o.optString("homeAlign"), d.homeAlign),
