@@ -105,6 +105,12 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `grid icons stay grey unless colour was chosen`() {
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("colourIcons") }).colourIcons)
+        val s = Settings(drawerLayout = DrawerLayout.GRID, colourIcons = true)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `search forgives typos only once asked to`() {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)

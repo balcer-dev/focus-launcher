@@ -159,8 +159,10 @@ data class Settings(
     val showRecentInstalls: Boolean = true,
     val showUsageInDrawer: Boolean = true,
     val drawerSort: DrawerSort = DrawerSort.ALPHA,
-    /** LIST is text only. GRID: four apps to a row, each with a small grey icon ([AppIcons]). */
+    /** LIST is text only. GRID: four apps to a row, each with a small icon ([AppIcons]), grey unless [colourIcons]. */
     val drawerLayout: DrawerLayout = DrawerLayout.LIST,
+    /** The grid's icons in the apps' own colours. An app whose time is up stays grey either way. */
+    val colourIcons: Boolean = false,
     val hidden: Set<String> = emptySet(),
     /** Apps listed above all others in the app list, in the order they were pinned. */
     val pinned: List<String> = emptyList(),
@@ -248,6 +250,7 @@ data class Settings(
         put("showUsageInDrawer", showUsageInDrawer)
         put("drawerSort", drawerSort.name)
         put("drawerLayout", drawerLayout.name)
+        put("colourIcons", colourIcons)
         put("hidden", JSONArray(hidden.toList()))
         put("pinned", JSONArray(pinned))
         put("renames", JSONObject(renames))
@@ -350,6 +353,7 @@ data class Settings(
                 showUsageInDrawer = o.optBoolean("showUsageInDrawer", d.showUsageInDrawer),
                 drawerSort = enumOr(o.optString("drawerSort"), d.drawerSort),
                 drawerLayout = enumOr(o.optString("drawerLayout"), d.drawerLayout),
+                colourIcons = o.optBoolean("colourIcons", d.colourIcons),
                 hidden = o.optJSONArray("hidden").strings().toSet(),
                 pinned = o.optJSONArray("pinned").strings().distinct(),
                 renames = o.optJSONObject("renames").stringMap(),

@@ -176,7 +176,9 @@
     <string name="settings_typo_search_summary">Pokazuje też aplikacje, których nazwa różni się o literę lub dwie, pod pozostałymi wynikami.</string>
     <string name="settings_list">Lista</string>
     <string name="settings_drawer_layout">Układ</string>
-    <string name="settings_drawer_layout_summary">Siatka: cztery aplikacje w rzędzie, każda z małą szarą ikoną.</string>
+    <string name="settings_drawer_layout_summary">Siatka: cztery aplikacje w rzędzie, każda z małą ikoną.</string>
+    <string name="settings_colour_icons">Kolorowe ikony</string>
+    <string name="settings_colour_icons_summary">Ikony w kolorach aplikacji zamiast szarych.</string>
     <string name="settings_recent_installs">Ostatnio zainstalowane</string>
     <string name="settings_recent_installs_summary">Aplikacje zainstalowane w ciągu ostatnich 24 godzin, na górze.</string>
     <string name="settings_drawer_usage">Pokazuj postęp minutników</string>

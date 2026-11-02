@@ -107,7 +107,8 @@ private val ICON_SIZE = 40.dp
  * and every other app as a plain list. With a work profile the list splits into Personal / Work tabs;
  * "Sort" orders it A–Z, by most used or by last used, below the pinned apps. Search always covers
  * both profiles and ranks by match, pinned or not. No icons, unless the grid view is chosen in
- * settings: the same sections, four apps to a row with small grey icons. Long-press an app for its menu.
+ * settings: the same sections, four apps to a row with small icons, grey unless colour is chosen too.
+ * Long-press an app for its menu.
  */
 @Composable
 fun DrawerScreen(
@@ -537,7 +538,7 @@ private fun AppTile(
             .padding(horizontal = 2.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        AppIcon(app, dimmed = spent)
+        AppIcon(app, dimmed = spent, colour = settings.colourIcons)
         VSpace(6.dp)
         val name = if (hasColourGlyphs(app.label)) Modifier.fillMaxWidth().monochrome() else Modifier.fillMaxWidth()
         T(app.label, name, size = 13.sp, color = if (spent) c.faint else c.fg, align = TextAlign.Center, maxLines = 1)
@@ -551,12 +552,13 @@ private fun AppTile(
 }
 
 /**
- * The app's icon in grey, the badged one for a work app, read in the background by [AppIcons].
+ * The app's icon, the badged one for a work app, read in the background by [AppIcons]. Grey unless
+ * [colour] is on; a [dimmed] one, of an app whose time is up, is grey in any case.
  * Until it arrives, or when there is none, its space stays empty; a work app whose icon could not
  * be read gets the list's work marker there instead.
  */
 @Composable
-private fun AppIcon(app: AppEntry, dimmed: Boolean) {
+private fun AppIcon(app: AppEntry, dimmed: Boolean, colour: Boolean) {
     val sizePx = with(LocalDensity.current) { ICON_SIZE.roundToPx() }
     // updatedAt is a key too: an updated app can bring a new icon.
     var icon by remember(app.key, app.updatedAt, sizePx) { mutableStateOf(Graph.icons.cached(app, sizePx)) }
@@ -575,7 +577,7 @@ private fun AppIcon(app: AppEntry, dimmed: Boolean) {
                 contentDescription = null, // the name is right below it
                 modifier = Modifier.fillMaxSize(),
                 alpha = if (dimmed) 0.35f else 1f,
-                colorFilter = GREYSCALE,
+                colorFilter = if (colour && !dimmed) null else GREYSCALE,
             )
         } else if (missing && app.isWorkProfile) {
             WorkBadge(side = 18.dp)

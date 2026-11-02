@@ -377,6 +377,13 @@ internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> 
             value = stringResource(settings.drawerLayout.labelRes),
             onClick = { layoutDialog = true },
         )
+        // Only the grid has icons, so the choice of their colour waits until it is picked.
+        if (settings.drawerLayout == DrawerLayout.GRID) {
+            ToggleRow(
+                stringResource(R.string.settings_colour_icons), settings.colourIcons,
+                subtitle = stringResource(R.string.settings_colour_icons_summary),
+            ) { v -> update { it.copy(colourIcons = v) } }
+        }
         ToggleRow(
             stringResource(R.string.settings_recent_installs), settings.showRecentInstalls,
             subtitle = stringResource(R.string.settings_recent_installs_summary),
