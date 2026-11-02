@@ -413,10 +413,7 @@ internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> 
     var layoutDialog by remember { mutableStateOf(false) }
     Page(stringResource(R.string.settings_app_drawer), onBack) {
         Section(stringResource(R.string.settings_search))
-        ToggleRow(
-            stringResource(R.string.settings_auto_keyboard), settings.autoKeyboard,
-            subtitle = stringResource(R.string.settings_auto_keyboard_summary),
-        ) { v -> update { it.copy(autoKeyboard = v) } }
+        ListKeyboardRow(settings)
         ToggleRow(
             stringResource(R.string.settings_auto_launch), settings.autoLaunch,
             subtitle = stringResource(R.string.settings_auto_launch_summary),

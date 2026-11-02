@@ -303,7 +303,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     }
     val swipeUp: () -> Unit = {
         when (val up = current.gestures.up) {
-            is SwipeTarget.Pages -> up.pages.firstOrNull()?.let { goTo(it, true) }
+            is SwipeTarget.Pages -> up.pages.firstOrNull()?.let { goTo(it, settings.listKeyboard.opensOnSwipeUp) }
             SwipeTarget.None -> Unit
             else -> runAction(up)
         }

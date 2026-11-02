@@ -192,8 +192,12 @@
 
     <!-- App drawer -->
     <string name="settings_search">Search</string>
-    <string name="settings_auto_keyboard">Open the keyboard right away</string>
-    <string name="settings_auto_keyboard_summary">Start typing the moment you swipe to the drawer.</string>
+    <!-- When the app list's search field takes the keyboard: one of list_keyboard_*. -->
+    <string name="settings_list_keyboard">Keyboard with the app list</string>
+    <string name="settings_list_keyboard_summary">When you can start typing the moment the list comes in.</string>
+    <string name="list_keyboard_always">Always</string>
+    <string name="list_keyboard_swipe_up">Only after swipe up</string>
+    <string name="list_keyboard_never">Never</string>
     <string name="settings_auto_launch">Open when one app is left</string>
     <string name="settings_auto_launch_summary">Launches the app as soon as your search matches only one.</string>
     <string name="settings_typo_search">Forgive typos</string>
@@ -285,8 +289,6 @@
     <string name="settings_page_place_up">Under ↑</string>
     <string name="settings_page_place_off">Off</string>
     <string name="settings_swipe_down_notifications">Swipe down for notifications</string>
-    <string name="settings_keyboard_with_drawer">Keyboard opens with the drawer</string>
-    <string name="settings_keyboard_with_drawer_summary">Start typing the moment you swipe to your apps.</string>
     <string name="settings_swipe_right">Swipe right</string>
     <string name="settings_double_tap_lock">Double tap to lock</string>
     <string name="settings_double_tap_lock_summary">Turns the screen off. Uses the Focus timer service.</string>

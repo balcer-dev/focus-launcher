@@ -34,6 +34,23 @@ enum class HomeAlign(@StringRes val labelRes: Int) {
     LEFT(R.string.align_left), CENTER(R.string.align_center), RIGHT(R.string.align_right),
 }
 
+/**
+ * When the app list's search field takes the keyboard. SWIPE_UP is how it always was with the old
+ * switch off: swipe up came with the keyboard, the list reached sideways without it.
+ */
+enum class ListKeyboard(@StringRes val labelRes: Int) {
+    ALWAYS(R.string.list_keyboard_always),
+    SWIPE_UP(R.string.list_keyboard_swipe_up),
+    NEVER(R.string.list_keyboard_never),
+    ;
+
+    /** The list opens the keyboard whichever way it was reached. */
+    val opensOnArrival: Boolean get() = this == ALWAYS
+
+    /** Swipe up to the list brings the keyboard with it. */
+    val opensOnSwipeUp: Boolean get() = this != NEVER
+}
+
 /** Order of the app list in the drawer. */
 enum class DrawerSort(@StringRes val labelRes: Int) {
     ALPHA(R.string.sort_alpha), MOST_USED(R.string.sort_most_used), RECENT(R.string.sort_recent),
@@ -164,7 +181,7 @@ data class Settings(
     val widgets: List<WidgetSlot> = emptyList(),
 
     // Drawer
-    val autoKeyboard: Boolean = false,
+    val listKeyboard: ListKeyboard = ListKeyboard.SWIPE_UP,
     val autoLaunch: Boolean = false,
     /** Search also lists names one or two edits away, below every closer match; [autoLaunch] ignores them. */
     val typoSearch: Boolean = false,
@@ -260,7 +277,9 @@ data class Settings(
 
         put("widgets", JSONArray().apply { widgets.forEach { put(it.toJson()) } })
 
-        put("autoKeyboard", autoKeyboard)
+        put("listKeyboard", listKeyboard.name)
+        // The switch it replaced, for an older version reading a backup: on only for ALWAYS.
+        put("autoKeyboard", listKeyboard == ListKeyboard.ALWAYS)
         put("autoLaunch", autoLaunch)
         put("typoSearch", typoSearch)
         put("favoritesInDrawer", favoritesInDrawer)
@@ -369,7 +388,9 @@ data class Settings(
                 // Not checked against the phone here: loading has no access to the widget service (see WidgetController.dropUnbound).
                 widgets = WidgetSlot.listFromJson(o.optJSONArray("widgets")),
 
-                autoKeyboard = o.optBoolean("autoKeyboard", d.autoKeyboard),
+                // Before the choice there was a switch: on is ALWAYS, off is what swipe up then did.
+                listKeyboard = ListKeyboard.entries.firstOrNull { it.name == o.optString("listKeyboard") }
+                    ?: if (o.optBoolean("autoKeyboard", false)) ListKeyboard.ALWAYS else ListKeyboard.SWIPE_UP,
                 autoLaunch = o.optBoolean("autoLaunch", d.autoLaunch),
                 typoSearch = o.optBoolean("typoSearch", d.typoSearch),
                 favoritesInDrawer = o.optBoolean("favoritesInDrawer", d.favoritesInDrawer),

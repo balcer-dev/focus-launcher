@@ -18,10 +18,12 @@ import com.focus.launcher.Graph
 import com.focus.launcher.R
 import com.focus.launcher.data.AppEntry
 import com.focus.launcher.data.LauncherPage
+import com.focus.launcher.data.ListKeyboard
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.Swipe
 import com.focus.launcher.data.SwipeTarget
 import com.focus.launcher.ui.components.AppPickerDialog
+import com.focus.launcher.ui.components.ChoiceDialog
 import com.focus.launcher.ui.components.FocusDialog
 import com.focus.launcher.ui.components.MenuRow
 import com.focus.launcher.ui.components.SettingRow
@@ -38,6 +40,26 @@ private val PAGE_CHOICES = listOf(LauncherPage.ALL_APPS, LauncherPage.QUICK, Lau
 /** Sets [swipe] to [target], through the layout's rules. Check [com.focus.launcher.data.GestureLayout.allows] first. */
 private fun setGesture(swipe: Swipe, target: SwipeTarget) =
     Graph.settings.update { it.copy(gestures = it.gestures.withTarget(swipe, target)) }
+
+/** When the app list's search field takes the keyboard. Shared by Settings → Gestures and App drawer. */
+@Composable
+internal fun ListKeyboardRow(settings: Settings) {
+    var choosing by remember { mutableStateOf(false) }
+    SettingRow(
+        stringResource(R.string.settings_list_keyboard),
+        subtitle = stringResource(R.string.settings_list_keyboard_summary),
+        value = stringResource(settings.listKeyboard.labelRes),
+        onClick = { choosing = true },
+    )
+    if (choosing) {
+        ChoiceDialog(
+            stringResource(R.string.settings_list_keyboard),
+            ListKeyboard.entries.map { it to stringResource(it.labelRes) },
+            settings.listKeyboard,
+            { choosing = false },
+        ) { v -> Graph.settings.update { it.copy(listKeyboard = v) } }
+    }
+}
 
 internal fun gesturePagesRoute(swipe: Swipe): String =
     if (swipe == Swipe.RIGHT) Routes.GESTURE_PAGES_RIGHT else Routes.GESTURE_PAGES_LEFT
@@ -58,10 +80,7 @@ internal fun GesturesPage(settings: Settings, apps: List<AppEntry>, status: Setu
             Graph.settings.update { it.copy(swipeDownNotifications = v) }
         }
         // Also under App drawer. It is looked for here too: it is what swiping to the drawer does.
-        ToggleRow(
-            stringResource(R.string.settings_keyboard_with_drawer), settings.autoKeyboard,
-            subtitle = stringResource(R.string.settings_keyboard_with_drawer_summary),
-        ) { v -> Graph.settings.update { it.copy(autoKeyboard = v) } }
+        ListKeyboardRow(settings)
         ToggleRow(
             stringResource(R.string.settings_double_tap_lock), settings.doubleTapLock,
             subtitle = stringResource(R.string.settings_double_tap_lock_summary),

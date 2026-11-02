@@ -238,7 +238,7 @@ fun DrawerScreen(
     // The keyboard only ever opens on purpose: by the "open right away" setting, by swiping up on
     // the home screen, or by tapping the search bar. In every other case make sure it is closed.
     LaunchedEffect(isActive) {
-        when (keyboardMove(isActive, quick, settings.autoKeyboard, wantsSearchFocus)) {
+        when (keyboardMove(isActive, quick, settings.listKeyboard.opensOnArrival, wantsSearchFocus)) {
             KeyboardMove.SHOW -> {
                 searchFocus.requestFocus()
                 keyboard?.show()
