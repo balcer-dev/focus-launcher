@@ -237,18 +237,21 @@ fun DrawerScreen(
 
     // The keyboard only ever opens on purpose: by the "open right away" setting, by swiping up on
     // the home screen, or by tapping the search bar. In every other case make sure it is closed.
-    // The fast-and-pinned page has no search field: asking it for focus would throw.
     LaunchedEffect(isActive) {
-        if (isActive && !quick && (settings.autoKeyboard || wantsSearchFocus)) {
-            searchFocus.requestFocus()
-            keyboard?.show()
-            onSearchFocusHandled()
-        } else {
-            focusManager.clearFocus()
-            keyboard?.hide()
-            // Back to the top while nobody is looking, so the next visit starts at A, not where the last one ended.
-            scrollTo(0)
+        when (keyboardMove(isActive, quick, settings.autoKeyboard, wantsSearchFocus)) {
+            KeyboardMove.SHOW -> {
+                searchFocus.requestFocus()
+                keyboard?.show()
+                onSearchFocusHandled()
+            }
+            KeyboardMove.HIDE -> {
+                focusManager.clearFocus()
+                keyboard?.hide()
+            }
+            KeyboardMove.NONE -> Unit
         }
+        // Back to the top while nobody is looking, so the next visit starts at A, not where the last one ended.
+        if (!isActive) scrollTo(0)
     }
     // stats is a key too: when it arrives the list reorders, and a keyed list would follow the old top row.
     // So are the pins: a new one lands at the very top, which a keyed list would otherwise scroll past.
@@ -491,6 +494,21 @@ fun DrawerScreen(
             Graph.settings.update { it.copy(drawerSort = v) }
         }
     }
+}
+
+/** What a drawer page does with the keyboard as it becomes active, or stops being active. */
+internal enum class KeyboardMove { SHOW, HIDE, NONE }
+
+/**
+ * SHOW when the app list comes on screen set to open the keyboard right away, or asked to by swipe
+ * up; HIDE otherwise. The fast-and-pinned page has no search field: asking it for focus would throw,
+ * and the keyboard is not its to close. Next to the app list in a sequence, it is left in the very
+ * frame the list opens the keyboard, and closing it then took the keyboard away from the list.
+ */
+internal fun keyboardMove(isActive: Boolean, quick: Boolean, autoKeyboard: Boolean, wantsSearchFocus: Boolean): KeyboardMove = when {
+    quick -> KeyboardMove.NONE
+    isActive && (autoKeyboard || wantsSearchFocus) -> KeyboardMove.SHOW
+    else -> KeyboardMove.HIDE
 }
 
 /** ALL: the app list, search and all. QUICK: the fast and pinned apps alone, a page of their own. */
