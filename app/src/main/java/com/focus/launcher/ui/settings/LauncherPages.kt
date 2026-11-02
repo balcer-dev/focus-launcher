@@ -40,12 +40,15 @@ import com.focus.launcher.data.FavoriteStyle
 import com.focus.launcher.data.FontChoice
 import com.focus.launcher.data.HomeAlign
 import com.focus.launcher.data.LaunchAnimation
+import com.focus.launcher.data.LauncherPage
 import com.focus.launcher.data.MAX_FAVORITES
 import com.focus.launcher.data.RingMode
 import com.focus.launcher.data.SHORTCUT_CAMERA
 import com.focus.launcher.data.SHORTCUT_PHONE
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.SplitSide
+import com.focus.launcher.data.Swipe
+import com.focus.launcher.data.SwipeTarget
 import com.focus.launcher.data.TimeFormat
 import com.focus.launcher.data.WallpaperStore
 import com.focus.launcher.ui.components.AppPickerDialog
@@ -393,10 +396,14 @@ internal fun WidgetsSettingsPage(settings: Settings, onBack: () -> Unit) {
         ToggleRow(
             stringResource(R.string.settings_widgets_show), settings.showWidgetPage,
             subtitle = stringResource(R.string.settings_widgets_show_summary),
-        ) { v -> update { it.copy(showWidgetPage = v) } }
+        ) { v -> update { it.copy(gestures = it.gestures.withTarget(Swipe.LEFT, SwipeTarget.Pages(widgetsSequence(v)))) } }
         Note(stringResource(if (supported) R.string.settings_widgets_note else R.string.widgets_unsupported))
     }
 }
+
+/** The pages swipe left led through while the widgets page was a switch: the widgets first, if on, then all apps. */
+private fun widgetsSequence(on: Boolean): List<LauncherPage> =
+    if (on) listOf(LauncherPage.WIDGETS, LauncherPage.ALL_APPS) else listOf(LauncherPage.ALL_APPS)
 
 // ---- App drawer ------------------------------------------------------------------------------
 
@@ -643,7 +650,7 @@ internal fun GesturesPage(settings: Settings, status: SetupStatus, onBack: () ->
         ToggleRow(
             stringResource(R.string.settings_swipe_up_search), settings.swipeUpSearch,
             subtitle = stringResource(R.string.settings_swipe_up_search_summary),
-        ) { v -> update { it.copy(swipeUpSearch = v) } }
+        ) { v -> update { it.copy(gestures = it.gestures.withTarget(Swipe.UP, if (v) SwipeTarget.Pages(listOf(LauncherPage.ALL_APPS)) else SwipeTarget.None)) } }
         // Also under App drawer. It is looked for here too: it is what swiping to the drawer does.
         ToggleRow(
             stringResource(R.string.settings_keyboard_with_drawer), settings.autoKeyboard,
@@ -652,7 +659,7 @@ internal fun GesturesPage(settings: Settings, status: SetupStatus, onBack: () ->
         ToggleRow(
             stringResource(R.string.settings_swipe_right), settings.swipeRightSearch,
             subtitle = stringResource(R.string.settings_swipe_right_summary),
-        ) { v -> update { it.copy(swipeRightSearch = v) } }
+        ) { v -> update { it.copy(gestures = it.gestures.withTarget(Swipe.RIGHT, if (v) SwipeTarget.WebSearch else SwipeTarget.None)) } }
         if (settings.swipeRightSearch) {
             SwipeRightRow(settings)
         }
@@ -684,8 +691,8 @@ internal fun SwipeRightRow(settings: Settings) {
             title = stringResource(R.string.settings_swipe_right_opens),
             apps = apps.filter { it.key !in settings.hidden },
             onDismiss = { picking = false },
-            leading = listOf(webSearch to { update { it.copy(swipeRightApp = "") } }),
-            onPick = { app -> update { it.copy(swipeRightApp = app.key) } },
+            leading = listOf(webSearch to { update { it.copy(gestures = it.gestures.withTarget(Swipe.RIGHT, SwipeTarget.WebSearch)) } }),
+            onPick = { app -> update { it.copy(gestures = it.gestures.withTarget(Swipe.RIGHT, SwipeTarget.App(app.key))) } },
         )
     }
 }

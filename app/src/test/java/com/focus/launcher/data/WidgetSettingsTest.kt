@@ -14,14 +14,14 @@ class WidgetSettingsTest {
 
     @Test fun `widgets survive a round trip, order and heights included`() {
         val slots = listOf(WidgetSlot(40, 500), WidgetSlot(3), WidgetSlot(17, WidgetSlot.MIN_HEIGHT_DP))
-        val restored = Settings.fromJson(Settings(showWidgetPage = true, widgets = slots).toJson())
+        val restored = Settings.fromJson(Settings(gestures = GestureLayout.fromLegacy(true, "", true, true), widgets = slots).toJson())
         assertEquals(slots, restored.widgets)
-        assertEquals(true, restored.showWidgetPage)
+        assertEquals(true, restored.gestures.reaches(LauncherPage.WIDGETS))
     }
 
     @Test fun `settings from before the widgets page have it off and empty`() {
-        val old = Settings.fromJson(Settings().toJson().apply { remove("showWidgetPage"); remove("widgets") })
-        assertEquals(false, old.showWidgetPage)
+        val old = Settings.fromJson(Settings().toJson().apply { remove("gestures"); remove("showWidgetPage"); remove("widgets") })
+        assertEquals(false, old.gestures.reaches(LauncherPage.WIDGETS))
         assertEquals(emptyList<WidgetSlot>(), old.widgets)
     }
 

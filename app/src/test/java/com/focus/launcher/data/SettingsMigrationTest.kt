@@ -80,7 +80,8 @@ class SettingsMigrationTest {
             showNote = true, note = "Call mum", showSeconds = true, favoriteSize = FavoriteSize.SMALL,
             showWallpaper = true, wallpaperStamp = 1_761_900_000_000L, wallpaperVisibility = 60,
             showTodo = true, todos = listOf(TodoItem("a", "Buy milk"), TodoItem("b", "Pay the bill", 1_761_900_000_000L)),
-            showWidgetPage = true, widgets = listOf(WidgetSlot(12, 260), WidgetSlot(7)),
+            gestures = GestureLayout.fromLegacy(true, "com.maps/.Main", true, false),
+            widgets = listOf(WidgetSlot(12, 260), WidgetSlot(7)),
         )
         val file = s.toJson().toString(2)
         assertEquals(s, Settings.fromBackup(JSONObject(file)))
@@ -149,6 +150,78 @@ class SettingsMigrationTest {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)
         assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
+    // ---- gestures: the four fields of before, read into one layout (see GestureLayout) ----
+
+    /** Settings as stored before the gesture layout: no "gestures", the old fields as given. */
+    private fun legacy(right: Boolean, app: String, widgets: Boolean, up: Boolean): JSONObject = Settings().toJson().apply {
+        remove("gestures")
+        put("swipeRightSearch", right)
+        put("swipeRightApp", app)
+        put("showWidgetPage", widgets)
+        put("swipeUpSearch", up)
+    }
+
+    private val maps = "com.maps/.Main"
+
+    private fun everyOldVariant(check: (right: Boolean, app: String, widgets: Boolean, up: Boolean) -> Unit) {
+        for (right in listOf(false, true)) for (app in listOf("", maps)) for (widgets in listOf(false, true)) for (up in listOf(false, true)) {
+            check(right, app, widgets, up)
+        }
+    }
+
+    @Test fun `swipe right as it was`() {
+        assertEquals(SwipeTarget.None, Settings.fromJson(legacy(right = false, app = maps, widgets = false, up = true)).gestures.right)
+        assertEquals(SwipeTarget.WebSearch, Settings.fromJson(legacy(right = true, app = "", widgets = false, up = true)).gestures.right)
+        assertEquals(SwipeTarget.App(maps), Settings.fromJson(legacy(right = true, app = maps, widgets = false, up = true)).gestures.right)
+    }
+
+    @Test fun `the widgets page as it was`() {
+        assertEquals(pages(LauncherPage.WIDGETS, LauncherPage.ALL_APPS), Settings.fromJson(legacy(true, "", widgets = true, up = true)).gestures.left)
+        assertEquals(pages(LauncherPage.ALL_APPS), Settings.fromJson(legacy(true, "", widgets = false, up = true)).gestures.left)
+    }
+
+    @Test fun `swipe up as it was`() {
+        assertEquals(pages(LauncherPage.ALL_APPS), Settings.fromJson(legacy(true, "", false, up = true)).gestures.up)
+        assertEquals(SwipeTarget.None, Settings.fromJson(legacy(true, "", false, up = false)).gestures.up)
+    }
+
+    @Test fun `a fresh install and settings from before have today's gestures`() {
+        val today = GestureLayout(SwipeTarget.WebSearch, pages(LauncherPage.ALL_APPS), pages(LauncherPage.ALL_APPS))
+        assertEquals(today, Settings().gestures)
+        assertEquals(today, GestureLayout.DEFAULT)
+        assertEquals(today, Settings.fromJson(JSONObject()).gestures)
+    }
+
+    @Test fun `every old variant comes back from a backup file`() = everyOldVariant { right, app, widgets, up ->
+        val file = legacy(right, app, widgets, up).toString(2)
+        assertEquals(GestureLayout.fromLegacy(right, app, widgets, up), Settings.fromBackup(JSONObject(file))!!.gestures)
+    }
+
+    @Test fun `a stored layout wins over the old fields next to it`() {
+        val stored = Settings(gestures = EXAMPLE_2).toJson()
+            .put("swipeRightSearch", true).put("swipeRightApp", maps).put("showWidgetPage", false).put("swipeUpSearch", true)
+        assertEquals(EXAMPLE_2, Settings.fromJson(stored).gestures)
+    }
+
+    @Test fun `the old fields written next to a layout describe it for an older version`() {
+        val o = Settings(gestures = EXAMPLE_1).toJson()
+        assertEquals(false, o.getBoolean("swipeRightSearch"))
+        assertEquals("", o.getString("swipeRightApp"))
+        assertEquals(true, o.getBoolean("showWidgetPage"))
+        assertEquals(true, o.getBoolean("swipeUpSearch"))
+        val withApp = Settings(gestures = GestureLayout(SwipeTarget.App(maps), pages(LauncherPage.ALL_APPS), SwipeTarget.None)).toJson()
+        assertEquals(true, withApp.getBoolean("swipeRightSearch"))
+        assertEquals(maps, withApp.getString("swipeRightApp"))
+        assertEquals(false, withApp.getBoolean("showWidgetPage"))
+        assertEquals(false, withApp.getBoolean("swipeUpSearch"))
+    }
+
+    @Test fun `old-shaped layouts survive the trip through the old fields`() = everyOldVariant { right, app, widgets, up ->
+        val layout = GestureLayout.fromLegacy(right, app, widgets, up)
+        val olderVersion = Settings(gestures = layout).toJson().apply { remove("gestures") }
+        assertEquals(layout, Settings.fromJson(olderVersion).gestures)
     }
 
     @Test fun `a file that is not a backup is refused`() {

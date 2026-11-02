@@ -155,9 +155,7 @@ data class Settings(
     val leftShortcut: String = SHORTCUT_PHONE,
     val rightShortcut: String = SHORTCUT_CAMERA,
 
-    // Widgets page
-    /** A page of Android widgets between the home screen and the app list. Off: the pager is the two of them only. */
-    val showWidgetPage: Boolean = false,
+    // Widgets page: on where a swipe leads to it (see [gestures])
     /**
      * The widgets on that page, top to bottom. Their ids belong to this phone's widget service: from
      * a backup restored on another phone they stand for nothing, and the launcher drops them the next
@@ -213,13 +211,17 @@ data class Settings(
 
     // Gestures
     val swipeDownNotifications: Boolean = true,
-    val swipeUpSearch: Boolean = true,
-    /** Swipe towards the page left of home (finger moves right): the phone's web search. */
-    val swipeRightSearch: Boolean = true,
-    /** [AppEntry.key] of the app that swipe right opens. "" = the web search. */
-    val swipeRightApp: String = "",
+    /** What swiping right, left and up on the home screen does; kept to its rules by [GestureLayout.normalized]. */
+    val gestures: GestureLayout = GestureLayout.DEFAULT,
     val doubleTapLock: Boolean = true,
 ) {
+    // Read-only stand-ins for the four fields [gestures] replaced, for the screens not yet moved to
+    // the layout. They go once nothing reads them.
+    val showWidgetPage: Boolean get() = gestures.reaches(LauncherPage.WIDGETS)
+    val swipeUpSearch: Boolean get() = gestures.up == SwipeTarget.Pages(listOf(LauncherPage.ALL_APPS))
+    val swipeRightSearch: Boolean get() = gestures.right is SwipeTarget.WebSearch || gestures.right is SwipeTarget.App
+    val swipeRightApp: String get() = (gestures.right as? SwipeTarget.App)?.key ?: ""
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("v", SCHEMA)
         put("dark", dark)
@@ -263,7 +265,6 @@ data class Settings(
         put("leftShortcut", leftShortcut)
         put("rightShortcut", rightShortcut)
 
-        put("showWidgetPage", showWidgetPage)
         put("widgets", JSONArray().apply { widgets.forEach { put(it.toJson()) } })
 
         put("autoKeyboard", autoKeyboard)
@@ -297,9 +298,8 @@ data class Settings(
         put("reviewHour", reviewHour)
 
         put("swipeDownNotifications", swipeDownNotifications)
-        put("swipeUpSearch", swipeUpSearch)
-        put("swipeRightSearch", swipeRightSearch)
-        put("swipeRightApp", swipeRightApp)
+        put("gestures", gestures.toJson())
+        gestures.putLegacyFields(this)
         put("doubleTapLock", doubleTapLock)
     }
 
@@ -373,7 +373,6 @@ data class Settings(
                 leftShortcut = o.optString("leftShortcut", d.leftShortcut),
                 rightShortcut = o.optString("rightShortcut", d.rightShortcut),
 
-                showWidgetPage = o.optBoolean("showWidgetPage", d.showWidgetPage),
                 // Not checked against the phone here: loading has no access to the widget service (see WidgetController.dropUnbound).
                 widgets = WidgetSlot.listFromJson(o.optJSONArray("widgets")),
 
@@ -408,9 +407,17 @@ data class Settings(
                 reviewHour = o.optInt("reviewHour", d.reviewHour).coerceIn(0, 23),
 
                 swipeDownNotifications = o.optBoolean("swipeDownNotifications", d.swipeDownNotifications),
-                swipeUpSearch = o.optBoolean("swipeUpSearch", d.swipeUpSearch),
-                swipeRightSearch = o.optBoolean("swipeRightSearch", d.swipeRightSearch),
-                swipeRightApp = o.optString("swipeRightApp", d.swipeRightApp),
+                // Settings from before the layout have the four fields it replaced; their defaults are
+                // what a fresh install had. A layout stored next to them (written so that an older
+                // version can restore a backup) wins over them.
+                gestures = (
+                    GestureLayout.fromJson(o.optJSONObject("gestures")) ?: GestureLayout.fromLegacy(
+                        swipeRightSearch = o.optBoolean("swipeRightSearch", true),
+                        swipeRightApp = o.optString("swipeRightApp", ""),
+                        showWidgetPage = o.optBoolean("showWidgetPage", false),
+                        swipeUpSearch = o.optBoolean("swipeUpSearch", true),
+                    )
+                    ).normalized(),
                 doubleTapLock = o.optBoolean("doubleTapLock", d.doubleTapLock),
             )
         }
