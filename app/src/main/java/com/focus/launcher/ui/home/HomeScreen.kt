@@ -32,6 +32,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -197,6 +198,7 @@ fun HomeScreen(
     var showingTodos by remember { mutableStateOf(false) }
     var addingTodo by remember { mutableStateOf(false) }
     var removingTodo by remember { mutableStateOf<TodoItem?>(null) }
+    var clearingTodos by remember { mutableStateOf(false) }
     // Checked tasks leave a week after they were checked: looked at on every return to the home
     // screen and at midnight, whether or not the section is on.
     LaunchedEffect(resumeCount, now.toLocalDate()) { Graph.settings.dropExpiredTodos(System.currentTimeMillis()) }
@@ -615,16 +617,28 @@ fun HomeScreen(
     }
     if (showingTodos) {
         FocusDialog({ showingTodos = false }, title = stringResource(R.string.home_todo_title), subtitle = stringResource(R.string.home_todo_list_subtitle)) {
-            MenuRow(stringResource(R.string.home_todo_add_task)) {
-                showingTodos = false
-                startAddingTodo()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                MenuRow(stringResource(R.string.home_todo_add_task), Modifier.weight(1f)) {
+                    showingTodos = false
+                    startAddingTodo()
+                }
+                if (settings.todos.isNotEmpty()) {
+                    T(
+                        stringResource(R.string.home_todo_remove_all),
+                        Modifier.press(onClick = { clearingTodos = true }).padding(horizontal = 24.dp, vertical = 14.dp),
+                        size = 15.sp, color = c.dim, maxLines = 1,
+                    )
+                }
             }
             val active = settings.todos.filter { it.checkedAt == null }
             val checked = settings.todos.filter { it.checkedAt != null }
             LazyColumn(Modifier.weight(1f, fill = false)) {
                 // Prefixed: an id from a hand-edited backup could be anything, and a repeated key crashes the list.
                 items(active, key = { "todo:" + it.id }) { item ->
-                    MenuRow(item.text, detail = "□", maxLines = 3, onLongClick = { removingTodo = item }) { setTodoChecked(item.id, System.currentTimeMillis()) }
+                    MenuRow(
+                        item.text, detail = "□", maxLines = 3, onLongClick = { removingTodo = item },
+                        trailing = { TrashButton { removingTodo = item } },
+                    ) { setTodoChecked(item.id, System.currentTimeMillis()) }
                 }
                 if (checked.isNotEmpty()) {
                     item(key = "heading:checked") {
@@ -632,10 +646,21 @@ fun HomeScreen(
                     }
                 }
                 items(checked, key = { "todo:" + it.id }) { item ->
-                    MenuRow(item.text, detail = "✓", maxLines = 3, onLongClick = { removingTodo = item }) { setTodoChecked(item.id, null) }
+                    MenuRow(
+                        item.text, detail = "✓", maxLines = 3, onLongClick = { removingTodo = item },
+                        trailing = { TrashButton { removingTodo = item } },
+                    ) { setTodoChecked(item.id, null) }
                 }
             }
         }
+    }
+    if (clearingTodos) {
+        ConfirmDialog(
+            title = stringResource(R.string.home_todo_remove_all_title),
+            message = stringResource(R.string.home_todo_remove_all_message, settings.todos.size),
+            confirmLabel = stringResource(R.string.home_todo_remove_all),
+            onDismiss = { clearingTodos = false },
+        ) { Graph.settings.update { it.copy(todos = emptyList()) } }
     }
     removingTodo?.let { item ->
         ConfirmDialog(
@@ -735,6 +760,20 @@ private fun Notice(text: String, strong: Boolean, lines: Int = 1, onClick: () ->
 
 private fun setShortcut(left: Boolean, spec: String) {
     Graph.settings.update { if (left) it.copy(leftShortcut = spec) else it.copy(rightShortcut = spec) }
+}
+
+/** A small bin at the end of a task in the list: asks to remove it, as a long press on the task does. */
+@Composable
+private fun TrashButton(onClick: () -> Unit) {
+    val c = LocalFocusColors.current
+    Box(Modifier.size(32.dp).press(onClick = onClick), contentAlignment = Alignment.Center) {
+        Image(
+            painterResource(R.drawable.ic_delete),
+            contentDescription = stringResource(R.string.home_todo_remove),
+            modifier = Modifier.size(20.dp),
+            colorFilter = ColorFilter.tint(c.dim),
+        )
+    }
 }
 
 /** Checks the to-do task [id] at [at] (ms), or unchecks it when [at] is null. */

@@ -91,6 +91,8 @@ fun MenuRow(
     selected: Boolean = false,
     maxLines: Int = 1,
     onLongClick: (() -> Unit)? = null,
+    /** Drawn last in the row, such as a button of its own; it takes its own taps. */
+    trailing: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     val c = LocalFocusColors.current
@@ -102,6 +104,7 @@ fun MenuRow(
         T(text, Modifier.weight(1f), size = 17.sp, maxLines = maxLines)
         if (detail != null) T(detail, size = 14.sp, color = c.dim, maxLines = 1)
         if (selected) Box(Modifier.size(8.dp).background(c.fg, CircleShape))
+        trailing?.invoke()
     }
 }
 

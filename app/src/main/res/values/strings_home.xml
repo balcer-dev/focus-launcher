@@ -116,7 +116,7 @@
         <item quantity="one">%1$d more task</item>
         <item quantity="other">%1$d more tasks</item>
     </plurals>
-    <string name="home_todo_list_subtitle">Tap a task to check or uncheck it; long-press it to remove it. Checked tasks disappear after seven days.</string>
+    <string name="home_todo_list_subtitle">Tap a task to check or uncheck it; tap its bin or long-press it to remove it. Checked tasks disappear after seven days.</string>
     <string name="home_todo_add_task">+ Add task</string>
     <!-- Heading over the checked tasks in the whole list. -->
     <string name="home_todo_checked">Checked</string>
@@ -126,6 +126,9 @@
     <string name="home_todo_full">The list is full. Remove a task first.</string>
     <string name="home_todo_remove_title">Remove this task?</string>
     <string name="home_todo_remove">Remove</string>
+    <string name="home_todo_remove_all">Remove all</string>
+    <string name="home_todo_remove_all_title">Remove all tasks?</string>
+    <string name="home_todo_remove_all_message">Tasks to remove: %1$d, checked ones included.</string>
 
     <!-- Corner shortcuts. -->
     <string name="home_shortcut_left">Left shortcut</string>

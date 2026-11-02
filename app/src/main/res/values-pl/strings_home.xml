@@ -76,7 +76,7 @@
         <item quantity="many">jeszcze %1$d zadań</item>
         <item quantity="other">jeszcze %1$d zadania</item>
     </plurals>
-    <string name="home_todo_list_subtitle">Kliknij zadanie, by je odhaczyć lub przywrócić; przytrzymaj, by je usunąć. Zrobione zadania znikają po siedmiu dniach.</string>
+    <string name="home_todo_list_subtitle">Kliknij zadanie, by je odhaczyć lub przywrócić; kliknij kosz albo przytrzymaj, by je usunąć. Zrobione zadania znikają po siedmiu dniach.</string>
     <string name="home_todo_add_task">+ Dodaj zadanie</string>
     <string name="home_todo_checked">Zrobione</string>
     <string name="home_todo_add_title">Nowe zadanie</string>
@@ -85,6 +85,9 @@
     <string name="home_todo_full">Lista jest pełna. Najpierw usuń jakieś zadanie.</string>
     <string name="home_todo_remove_title">Usunąć to zadanie?</string>
     <string name="home_todo_remove">Usuń</string>
+    <string name="home_todo_remove_all">Usuń wszystkie</string>
+    <string name="home_todo_remove_all_title">Usunąć wszystkie zadania?</string>
+    <string name="home_todo_remove_all_message">Zadania do usunięcia: %1$d, także zrobione.</string>
 
     <string name="home_shortcut_left">Lewy skrót</string>
     <string name="home_shortcut_right">Prawy skrót</string>
