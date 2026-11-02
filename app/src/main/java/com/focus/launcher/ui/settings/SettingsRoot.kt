@@ -50,12 +50,16 @@ import com.focus.launcher.BuildConfig
 import com.focus.launcher.Graph
 import com.focus.launcher.R
 import com.focus.launcher.data.CalendarRepository
+import com.focus.launcher.data.LauncherPage
 import com.focus.launcher.data.Settings
+import com.focus.launcher.data.Swipe
+import com.focus.launcher.data.placeOf
 import com.focus.launcher.ui.components.ConfirmDialog
 import com.focus.launcher.ui.components.Label
 import com.focus.launcher.ui.components.SettingRow
 import com.focus.launcher.ui.components.T
 import com.focus.launcher.ui.components.VSpace
+import com.focus.launcher.ui.pagePlace
 import com.focus.launcher.ui.theme.LocalFocusColors
 import com.focus.launcher.util.Perms
 import java.io.ByteArrayOutputStream
@@ -102,6 +106,8 @@ object Routes {
     const val WEEKLY = "weekly"
     const val APPEARANCE = "appearance"
     const val GESTURES = "gestures"
+    const val GESTURE_PAGES_RIGHT = "gesturepages_right"
+    const val GESTURE_PAGES_LEFT = "gesturepages_left"
     const val ABOUT = "about"
     const val WELCOME = "welcome"
 }
@@ -169,14 +175,16 @@ fun SettingsRoot(settings: Settings, startRoute: String?, onExit: () -> Unit) {
             Routes.SETUP -> SetupPage(status, back) { status = SetupStatus.read(context) }
             Routes.HOME -> HomePage(settings, apps, back, go)
             Routes.FAST_APPS -> FastAppsPage(settings, apps, back)
-            Routes.WIDGETS -> WidgetsSettingsPage(settings, back)
+            Routes.WIDGETS -> WidgetsSettingsPage(settings, back, go)
             Routes.DRAWER -> DrawerPage(settings, back, go)
             Routes.HIDDEN -> HiddenAppsPage(settings, apps, back)
             Routes.TIMERS -> TimersPage(settings, apps, status, back, go)
             Routes.TIMER_APPS -> TimerAppsPage(settings, apps, back, go)
             Routes.WEEKLY -> WeeklyPage(settings, status, back, go)
             Routes.APPEARANCE -> AppearancePage(settings, back)
-            Routes.GESTURES -> GesturesPage(settings, status, back, go)
+            Routes.GESTURES -> GesturesPage(settings, apps, status, back, go)
+            Routes.GESTURE_PAGES_RIGHT -> GesturePagesPage(Swipe.RIGHT, settings, apps, back)
+            Routes.GESTURE_PAGES_LEFT -> GesturePagesPage(Swipe.LEFT, settings, apps, back)
             Routes.ABOUT -> AboutPage(back, go)
             Routes.WELCOME -> WelcomePage(settings) { toSetup ->
                 Graph.state.tutorialSeen = true
@@ -228,7 +236,7 @@ private fun MainPage(
         SettingRow(
             stringResource(R.string.settings_widgets_page),
             subtitle = stringResource(R.string.settings_widgets_page_summary),
-            value = stringResource(if (settings.showWidgetPage) R.string.settings_on else R.string.settings_off),
+            value = pagePlace(settings.gestures.placeOf(LauncherPage.WIDGETS)),
             onClick = { go(Routes.WIDGETS) },
         )
         SettingRow(

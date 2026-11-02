@@ -51,6 +51,7 @@ import com.focus.launcher.data.Swipe
 import com.focus.launcher.data.SwipeTarget
 import com.focus.launcher.data.TimeFormat
 import com.focus.launcher.data.WallpaperStore
+import com.focus.launcher.data.placeOf
 import com.focus.launcher.ui.components.AppPickerDialog
 import com.focus.launcher.ui.components.ChoiceDialog
 import com.focus.launcher.ui.components.FocusDialog
@@ -62,6 +63,7 @@ import com.focus.launcher.ui.home.ClockTapDialog
 import com.focus.launcher.ui.home.clockTapLabel
 import com.focus.launcher.ui.home.shortcutLabel
 import com.focus.launcher.ui.launchApp
+import com.focus.launcher.ui.pagePlace
 import com.focus.launcher.ui.theme.LocalFocusColors
 import com.focus.launcher.ui.widgets.WidgetController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -388,22 +390,24 @@ internal fun FastAppsPage(settings: Settings, apps: List<AppEntry>, onBack: () -
 
 // ---- Widgets page ----------------------------------------------------------------------------
 
+/**
+ * Settings → Widgets page. The page is on where a swipe leads to it (Settings → Gestures); here it says
+ * where that is. The widgets themselves are added, moved and removed on the page.
+ */
 @Composable
-internal fun WidgetsSettingsPage(settings: Settings, onBack: () -> Unit) {
+internal fun WidgetsSettingsPage(settings: Settings, onBack: () -> Unit, go: (String) -> Unit) {
     val context = LocalContext.current
     val supported = remember { WidgetController.isSupported(context) }
     Page(stringResource(R.string.settings_widgets_page), onBack) {
-        ToggleRow(
-            stringResource(R.string.settings_widgets_show), settings.showWidgetPage,
-            subtitle = stringResource(R.string.settings_widgets_show_summary),
-        ) { v -> update { it.copy(gestures = it.gestures.withTarget(Swipe.LEFT, SwipeTarget.Pages(widgetsSequence(v)))) } }
+        SettingRow(
+            stringResource(R.string.settings_widgets_where),
+            subtitle = stringResource(R.string.settings_widgets_where_summary),
+            value = pagePlace(settings.gestures.placeOf(LauncherPage.WIDGETS)),
+            onClick = { go(Routes.GESTURES) },
+        )
         Note(stringResource(if (supported) R.string.settings_widgets_note else R.string.widgets_unsupported))
     }
 }
-
-/** The pages swipe left led through while the widgets page was a switch: the widgets first, if on, then all apps. */
-private fun widgetsSequence(on: Boolean): List<LauncherPage> =
-    if (on) listOf(LauncherPage.WIDGETS, LauncherPage.ALL_APPS) else listOf(LauncherPage.ALL_APPS)
 
 // ---- App drawer ------------------------------------------------------------------------------
 
@@ -640,38 +644,7 @@ internal fun AppearancePage(settings: Settings, onBack: () -> Unit) {
     }
 }
 
-// ---- Gestures --------------------------------------------------------------------------------
-
-@Composable
-internal fun GesturesPage(settings: Settings, status: SetupStatus, onBack: () -> Unit, go: (String) -> Unit) {
-    Page(stringResource(R.string.settings_gestures), onBack) {
-        Note(stringResource(if (settings.showWidgetPage) R.string.settings_gestures_note_widgets else R.string.settings_gestures_note))
-        ToggleRow(stringResource(R.string.settings_swipe_down_notifications), settings.swipeDownNotifications) { v -> update { it.copy(swipeDownNotifications = v) } }
-        ToggleRow(
-            stringResource(R.string.settings_swipe_up_search), settings.swipeUpSearch,
-            subtitle = stringResource(R.string.settings_swipe_up_search_summary),
-        ) { v -> update { it.copy(gestures = it.gestures.withTarget(Swipe.UP, if (v) SwipeTarget.Pages(listOf(LauncherPage.ALL_APPS)) else SwipeTarget.None)) } }
-        // Also under App drawer. It is looked for here too: it is what swiping to the drawer does.
-        ToggleRow(
-            stringResource(R.string.settings_keyboard_with_drawer), settings.autoKeyboard,
-            subtitle = stringResource(R.string.settings_keyboard_with_drawer_summary),
-        ) { v -> update { it.copy(autoKeyboard = v) } }
-        ToggleRow(
-            stringResource(R.string.settings_swipe_right), settings.swipeRightSearch,
-            subtitle = stringResource(R.string.settings_swipe_right_summary),
-        ) { v -> update { it.copy(gestures = it.gestures.withTarget(Swipe.RIGHT, if (v) SwipeTarget.WebSearch else SwipeTarget.None)) } }
-        if (settings.swipeRightSearch) {
-            SwipeRightRow(settings)
-        }
-        ToggleRow(
-            stringResource(R.string.settings_double_tap_lock), settings.doubleTapLock,
-            subtitle = stringResource(R.string.settings_double_tap_lock_summary),
-        ) { v -> update { it.copy(doubleTapLock = v) } }
-        if (settings.doubleTapLock && !status.timerService) {
-            Note(stringResource(R.string.settings_double_tap_service_off)) { go(Routes.SETUP) }
-        }
-    }
-}
+// ---- Swipe right on the welcome screen ---------------------------------------------------
 
 /** Which app swipe right opens: any app, or the web search. Shared by Settings → Gestures and the welcome screen. */
 @Composable

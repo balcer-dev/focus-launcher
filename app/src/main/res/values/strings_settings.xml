@@ -18,7 +18,7 @@
     <string name="settings_home_screen">Home screen</string>
     <string name="settings_home_screen_summary">Clock, sections, fast apps, corner shortcuts</string>
     <string name="settings_widgets_page">Widgets page</string>
-    <string name="settings_widgets_page_summary">Android widgets between the home screen and the app drawer</string>
+    <string name="settings_widgets_page_summary">Android widgets on a page of their own</string>
     <string name="settings_app_drawer">App drawer</string>
     <string name="settings_app_drawer_summary">Keyboard, search, recently installed, hidden apps</string>
     <!-- How many apps the drawer lists. %1$d is the count. -->
@@ -184,8 +184,9 @@
     <string name="settings_add_fast_app">Add a fast app</string>
 
     <!-- Widgets page -->
-    <string name="settings_widgets_show">Show the widgets page</string>
-    <string name="settings_widgets_show_summary">Swipe left on the home screen for your widgets, then once more for the app drawer.</string>
+    <!-- Where the page stands among the swipes (settings_page_place_*); a tap opens Gestures. -->
+    <string name="settings_widgets_where">Where the page is</string>
+    <string name="settings_widgets_where_summary">Set in Gestures, like every page.</string>
     <string name="settings_widgets_note">Add, move, resize and remove widgets on the page itself. Widgets belong to this phone: a backup restored on another phone brings the page back empty.</string>
 
     <!-- App drawer -->
@@ -256,16 +257,36 @@
     <string name="settings_wallpaper_remove_failed">Could not delete the picture</string>
 
     <!-- Gestures -->
-    <string name="settings_gestures_note">Swiping left always opens the app drawer, and a long-press on empty space opens these settings.</string>
-    <!-- The same while the widgets page is on. -->
-    <string name="settings_gestures_note_widgets">Swiping left opens the widgets page and then the app drawer, and a long-press on empty space opens these settings.</string>
+    <string name="settings_gestures_note">What each swipe on the home screen does. A long-press on empty space there opens these settings.</string>
+    <string name="settings_swipe_left">Swipe left</string>
+    <string name="settings_swipe_up">Swipe up</string>
+    <!-- A swipe set to do nothing. -->
+    <string name="settings_gesture_nothing">Nothing</string>
+    <string name="settings_gesture_app">App…</string>
+    <!-- Opens the editor of a swipe's sequence of pages. -->
+    <string name="settings_gesture_pages">Pages…</string>
+    <string name="settings_gesture_keeps_all_apps">All apps has to stay under one of the swipes: without it you could not open an app that is not fast or pinned, nor search.</string>
+    <!-- %1$s: the swipe, e.g. "Swipe left". -->
+    <string name="settings_gesture_pages_title">%1$s: pages</string>
+    <string name="settings_gesture_pages_note">Each further swipe the same way goes one page on, in this order. A page added here leaves the other side\'s sequence.</string>
+    <string name="settings_gesture_add_page">Add a page</string>
+    <!-- Next to a page in the other side's sequence; %1$s is an arrow, ← or →. -->
+    <string name="settings_gesture_now_under">now under %1$s</string>
+    <!-- %1$s: what the swipe does now, e.g. "Web search". -->
+    <string name="settings_gesture_replaces_action">Now: %1$s. A page added here takes its place.</string>
+    <!-- The pages that can stand under a swipe. -->
+    <string name="gestures_page_widgets">Widgets</string>
+    <string name="gestures_page_all_apps">All apps</string>
+    <string name="gestures_page_quick">Fast and pinned</string>
+    <!-- Where a page stands; %1$d is how many swipes away. -->
+    <string name="settings_page_place_left">← page %1$d</string>
+    <string name="settings_page_place_right">→ page %1$d</string>
+    <string name="settings_page_place_up">Under ↑</string>
+    <string name="settings_page_place_off">Off</string>
     <string name="settings_swipe_down_notifications">Swipe down for notifications</string>
-    <string name="settings_swipe_up_search">Swipe up to search</string>
-    <string name="settings_swipe_up_search_summary">Jumps to the drawer with the keyboard open.</string>
     <string name="settings_keyboard_with_drawer">Keyboard opens with the drawer</string>
     <string name="settings_keyboard_with_drawer_summary">Start typing the moment you swipe to your apps.</string>
     <string name="settings_swipe_right">Swipe right</string>
-    <string name="settings_swipe_right_summary">Opens the app below, or the web search, like the page left of a stock home screen.</string>
     <string name="settings_double_tap_lock">Double tap to lock</string>
     <string name="settings_double_tap_lock_summary">Turns the screen off. Uses the Focus timer service.</string>
     <!-- Tapping the note opens Setup. -->

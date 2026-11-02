@@ -15,7 +15,7 @@
     <string name="settings_home_screen">Ekran główny</string>
     <string name="settings_home_screen_summary">Zegar, sekcje, szybkie aplikacje, skróty w rogach</string>
     <string name="settings_widgets_page">Strona widżetów</string>
-    <string name="settings_widgets_page_summary">Widżety Androida między ekranem głównym a listą aplikacji</string>
+    <string name="settings_widgets_page_summary">Widżety Androida na osobnej stronie</string>
     <string name="settings_app_drawer">Lista aplikacji</string>
     <string name="settings_app_drawer_summary">Klawiatura, wyszukiwanie, ostatnio zainstalowane, ukryte aplikacje</string>
     <plurals name="settings_app_count">
@@ -168,8 +168,8 @@
     <string name="settings_add_fast_app">Dodaj szybką aplikację</string>
 
     <!-- Strona widżetów -->
-    <string name="settings_widgets_show">Pokazuj stronę widżetów</string>
-    <string name="settings_widgets_show_summary">Przesuń w lewo na ekranie głównym, żeby zobaczyć widżety, i jeszcze raz – do listy aplikacji.</string>
+    <string name="settings_widgets_where">Gdzie jest ta strona</string>
+    <string name="settings_widgets_where_summary">Ustawiasz to w Gestach, jak każdą stronę.</string>
     <string name="settings_widgets_note">Widżety dodajesz, przestawiasz, zmieniasz ich wysokość i usuwasz na samej stronie. Należą do tego telefonu: kopia zapasowa przywrócona na innym telefonie zostawi stronę pustą.</string>
 
     <!-- Lista aplikacji -->
@@ -234,15 +234,29 @@
     <string name="settings_wallpaper_remove_failed">Nie udało się usunąć obrazu</string>
 
     <!-- Gesty -->
-    <string name="settings_gestures_note">Przesunięcie w lewo zawsze otwiera listę aplikacji, a przytrzymanie pustego miejsca – te ustawienia.</string>
-    <string name="settings_gestures_note_widgets">Przesunięcie w lewo otwiera stronę widżetów, kolejne – listę aplikacji. Przytrzymanie pustego miejsca otwiera te ustawienia.</string>
+    <string name="settings_gestures_note">Co robi każde przesunięcie na ekranie głównym. Przytrzymanie pustego miejsca na nim otwiera te ustawienia.</string>
+    <string name="settings_swipe_left">Przesuń w lewo</string>
+    <string name="settings_swipe_up">Przesuń w górę</string>
+    <string name="settings_gesture_nothing">Nic</string>
+    <string name="settings_gesture_app">Aplikacja…</string>
+    <string name="settings_gesture_pages">Strony…</string>
+    <string name="settings_gesture_keeps_all_apps">Wszystkie aplikacje muszą zostać pod którymś przesunięciem: bez nich nie otworzysz aplikacji spoza szybkich i przypiętych ani niczego nie wyszukasz.</string>
+    <string name="settings_gesture_pages_title">%1$s: strony</string>
+    <string name="settings_gesture_pages_note">Każde kolejne przesunięcie w tę samą stronę to następna strona, w tej kolejności. Strona dodana tutaj znika z ciągu po przeciwnej stronie.</string>
+    <string name="settings_gesture_add_page">Dodaj stronę</string>
+    <string name="settings_gesture_now_under">teraz pod %1$s</string>
+    <string name="settings_gesture_replaces_action">Teraz: %1$s. Dodana strona zajmie jej miejsce.</string>
+    <string name="gestures_page_widgets">Widżety</string>
+    <string name="gestures_page_all_apps">Wszystkie aplikacje</string>
+    <string name="gestures_page_quick">Szybkie i przypięte</string>
+    <string name="settings_page_place_left">← strona %1$d</string>
+    <string name="settings_page_place_right">→ strona %1$d</string>
+    <string name="settings_page_place_up">Pod ↑</string>
+    <string name="settings_page_place_off">Wyłączona</string>
     <string name="settings_swipe_down_notifications">Przesuń w dół – powiadomienia</string>
-    <string name="settings_swipe_up_search">Przesuń w górę – wyszukiwanie</string>
-    <string name="settings_swipe_up_search_summary">Przechodzi do listy aplikacji z otwartą klawiaturą.</string>
     <string name="settings_keyboard_with_drawer">Otwieraj klawiaturę z listą</string>
     <string name="settings_keyboard_with_drawer_summary">Zacznij pisać, gdy tylko przesuniesz do aplikacji.</string>
     <string name="settings_swipe_right">Przesuń w prawo</string>
-    <string name="settings_swipe_right_summary">Otwiera aplikację wybraną niżej albo wyszukiwanie w sieci, jak strona na lewo od zwykłego ekranu głównego.</string>
     <string name="settings_double_tap_lock">Dwukrotne kliknięcie blokuje</string>
     <string name="settings_double_tap_lock_summary">Wyłącza ekran. Korzysta z usługi minutników Focus.</string>
     <string name="settings_double_tap_service_off">Usługa minutników Focus jest wyłączona, więc dwukrotne kliknięcie jeszcze nie zablokuje ekranu.  Otwórz konfigurację  →</string>

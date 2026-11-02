@@ -95,6 +95,18 @@ class GestureLayoutTest {
         assertEquals(EXAMPLE_2.up, EXAMPLE_2[Swipe.UP])
     }
 
+    @Test fun `where a page stands`() {
+        val widgets = GestureLayout.fromLegacy(true, "", true, true)
+        assertEquals(Place(LEFT, 1), GestureLayout.DEFAULT.placeOf(ALL_APPS))
+        assertEquals(null, GestureLayout.DEFAULT.placeOf(WIDGETS))
+        assertEquals(Place(LEFT, 1), widgets.placeOf(WIDGETS))
+        assertEquals(Place(LEFT, 2), widgets.placeOf(ALL_APPS))
+        assertEquals(Place(RIGHT, 2), EXAMPLE_2.placeOf(WIDGETS))
+        assertEquals(Place(RIGHT, 1), EXAMPLE_2.placeOf(ALL_APPS))
+        assertEquals(Place(Swipe.UP, 1), EXAMPLE_2.placeOf(QUICK))
+        assertEquals(Place(Swipe.UP, 1), EXAMPLE_1.placeOf(ALL_APPS))
+    }
+
     @Test fun `both examples survive a round trip`() {
         for (layout in listOf(EXAMPLE_1, EXAMPLE_2)) {
             assertEquals(layout, Settings.fromJson(Settings(gestures = layout).toJson()).gestures)

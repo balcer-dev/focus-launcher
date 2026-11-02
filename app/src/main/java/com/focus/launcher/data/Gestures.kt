@@ -1,10 +1,16 @@
 package com.focus.launcher.data
 
+import androidx.annotation.StringRes
+import com.focus.launcher.R
 import org.json.JSONArray
 import org.json.JSONObject
 
 /** A page that can stand in a swipe's sequence or under swipe up. The home screen is not one: it is always there. */
-enum class LauncherPage { WIDGETS, ALL_APPS, QUICK }
+enum class LauncherPage(@StringRes val labelRes: Int) {
+    WIDGETS(R.string.gestures_page_widgets),
+    ALL_APPS(R.string.gestures_page_all_apps),
+    QUICK(R.string.gestures_page_quick),
+}
 
 /** A swipe on the home screen. RIGHT is the finger moving right: the page beyond comes in from the left. */
 enum class Swipe { RIGHT, LEFT, UP }
@@ -29,6 +35,22 @@ sealed interface SwipeTarget {
      */
     fun resolvedAgainst(installed: Set<String>): SwipeTarget =
         if (this is App && key !in installed) WebSearch else this
+}
+
+/** Where a page stands: under [swipe], the [position]-th page that way (1 is one swipe away; swipe up has only 1). */
+data class Place(val swipe: Swipe, val position: Int)
+
+/**
+ * Where [page] stands: in swipe left's sequence, else in swipe right's, else under swipe up; null
+ * when no swipe leads to it. The sequences come first: from there swipe up only scrolls to it.
+ */
+fun GestureLayout.placeOf(page: LauncherPage): Place? {
+    for (swipe in listOf(Swipe.LEFT, Swipe.RIGHT, Swipe.UP)) {
+        val pages = (this[swipe] as? SwipeTarget.Pages)?.pages ?: continue
+        val index = pages.indexOf(page)
+        if (index >= 0) return Place(swipe, index + 1)
+    }
+    return null
 }
 
 /**
