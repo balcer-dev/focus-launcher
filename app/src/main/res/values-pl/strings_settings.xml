@@ -172,6 +172,8 @@
     <string name="settings_auto_keyboard_summary">Zacznij pisać, gdy tylko przesuniesz do listy aplikacji.</string>
     <string name="settings_auto_launch">Otwórz, gdy zostanie jedna</string>
     <string name="settings_auto_launch_summary">Uruchamia aplikację, gdy tylko wyszukiwanie pasuje do jednej.</string>
+    <string name="settings_typo_search">Wybaczaj literówki</string>
+    <string name="settings_typo_search_summary">Pokazuje też aplikacje, których nazwa różni się o literę lub dwie, pod pozostałymi wynikami.</string>
     <string name="settings_list">Lista</string>
     <string name="settings_drawer_layout">Układ</string>
     <string name="settings_drawer_layout_summary">Siatka: cztery aplikacje w rzędzie, każda z małą szarą ikoną.</string>

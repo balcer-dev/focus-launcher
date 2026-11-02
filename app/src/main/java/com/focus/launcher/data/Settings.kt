@@ -154,6 +154,8 @@ data class Settings(
     // Drawer
     val autoKeyboard: Boolean = false,
     val autoLaunch: Boolean = false,
+    /** Search also lists names one or two edits away, below every closer match; [autoLaunch] ignores them. */
+    val typoSearch: Boolean = false,
     val showRecentInstalls: Boolean = true,
     val showUsageInDrawer: Boolean = true,
     val drawerSort: DrawerSort = DrawerSort.ALPHA,
@@ -241,6 +243,7 @@ data class Settings(
 
         put("autoKeyboard", autoKeyboard)
         put("autoLaunch", autoLaunch)
+        put("typoSearch", typoSearch)
         put("showRecentInstalls", showRecentInstalls)
         put("showUsageInDrawer", showUsageInDrawer)
         put("drawerSort", drawerSort.name)
@@ -342,6 +345,7 @@ data class Settings(
 
                 autoKeyboard = o.optBoolean("autoKeyboard", d.autoKeyboard),
                 autoLaunch = o.optBoolean("autoLaunch", d.autoLaunch),
+                typoSearch = o.optBoolean("typoSearch", d.typoSearch),
                 showRecentInstalls = o.optBoolean("showRecentInstalls", d.showRecentInstalls),
                 showUsageInDrawer = o.optBoolean("showUsageInDrawer", d.showUsageInDrawer),
                 drawerSort = enumOr(o.optString("drawerSort"), d.drawerSort),

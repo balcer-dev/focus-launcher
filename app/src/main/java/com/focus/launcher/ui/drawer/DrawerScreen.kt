@@ -92,6 +92,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.Normalizer
+import kotlin.math.abs
 
 private const val DAY_MS = 86_400_000L
 
@@ -180,8 +181,9 @@ fun DrawerScreen(
     }
     // Search ignores tab, sort and pins: it looks through both profiles and ranks by match.
     // Without a query the list is everything not already pinned above it.
-    val results = remember(visible, sorted, settings.pinned, query, searchNames) {
-        if (query.isBlank()) sorted.filter { it.key !in settings.pinned } else searchApps(visible, query, searchNames)
+    val results = remember(visible, sorted, settings.pinned, query, searchNames, settings.typoSearch) {
+        if (query.isBlank()) sorted.filter { it.key !in settings.pinned }
+        else searchApps(visible, query, searchNames, typos = settings.typoSearch)
     }
     val recent = remember(inProfile, settings.showRecentInstalls, settings.pinned) {
         if (!settings.showRecentInstalls) emptyList()
@@ -229,9 +231,14 @@ fun DrawerScreen(
     // So are the pins: a new one lands at the very top, which a keyed list would otherwise scroll past.
     // And the layout: the list and the grid each keep their own position.
     LaunchedEffect(query, workTab, sort, stats, settings.pinned, grid) { scrollTo(0) }
-    // Optional: open the app as soon as the search narrows down to exactly one.
+    // Optional: open the app as soon as the search narrows down to exactly one. Names only a typo
+    // away are not counted: they would keep "map" from opening Maps whenever Mail is one edit off,
+    // and opening an app on a guess at what was meant cannot be taken back.
     LaunchedEffect(results, query) {
-        if (settings.autoLaunch && isActive && query.trim().length >= 2 && results.size == 1) onLaunch(results[0])
+        if (settings.autoLaunch && isActive && query.trim().length >= 2) {
+            val withoutTypos = if (settings.typoSearch) searchApps(visible, query, searchNames) else results
+            if (withoutTypos.size == 1) onLaunch(withoutTypos[0])
+        }
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
@@ -597,27 +604,84 @@ private fun normalize(text: String): String {
 
 /**
  * Filters [apps] by [query]. Best matches first: name starts with the query, then a word in the
- * name starts with it, then it appears anywhere, then initials ("gm" finds Google Maps), and
- * finally a loose in-order match for typos of three letters or more.
+ * name starts with it, then it appears anywhere, then initials ("gm" finds Google Maps), then,
+ * with [typos], names one or two edits away, and finally a loose in-order match for typos of three
+ * letters or more.
  */
-fun searchApps(apps: List<AppEntry>, query: String, names: Map<String, String> = emptyMap()): List<AppEntry> {
+fun searchApps(
+    apps: List<AppEntry>,
+    query: String,
+    names: Map<String, String> = emptyMap(),
+    typos: Boolean = false,
+): List<AppEntry> {
     val q = normalize(query)
     if (q.isEmpty()) return apps
     val ranked = ArrayList<Pair<Int, AppEntry>>()
     for (app in apps) {
         val name = names[app.key] ?: normalize(app.label)
-        val words = name.split(' ', '-', '_', '.', ':').filter { it.isNotEmpty() }
-        val rank = when {
-            name.startsWith(q) -> 0
-            words.any { it.startsWith(q) } -> 1
-            name.contains(q) -> 2
-            words.size > 1 && words.map { it[0] }.joinToString("").startsWith(q) -> 3
-            q.length >= 3 && isSubsequence(q, name) -> 4
-            else -> continue
-        }
+        val rank = searchRank(q, name, typos) ?: continue
         ranked += rank to app
     }
     return ranked.sortedBy { it.first }.map { it.second } // stable: alphabetical within a rank
+}
+
+/** Both arguments have already been normalized. Smaller ranks always appear first; null: no match. */
+internal fun searchRank(query: String, name: String, typos: Boolean): Int? {
+    val words = name.split(' ', '-', '_', '.', ':').filter { it.isNotEmpty() }
+    return when {
+        name.startsWith(query) -> 0
+        words.any { it.startsWith(query) } -> 1
+        name.contains(query) -> 2
+        words.size > 1 && words.map { it[0] }.joinToString("").startsWith(query) -> 3
+        else -> when (if (typos) fuzzyDistance(query, name, words) else Int.MAX_VALUE) {
+            1 -> 4
+            2 -> 5
+            else -> if (query.length >= 3 && isSubsequence(query, name)) 6 else null
+        }
+    }
+}
+
+/**
+ * Edit distance of [query] to the whole [name] or to the start of one of its [words], so a partial
+ * search also tolerates typos. Anything past the limit (one edit for three letters, two for more)
+ * comes back as more than the limit.
+ */
+internal fun fuzzyDistance(query: String, name: String, words: List<String>): Int {
+    // Two edits in a two-letter search would include most of the drawer.
+    if (query.length < 3) return 3
+    val limit = if (query.length == 3) 1 else 2
+    var best = editDistanceAtMost(query, name, limit)
+    for (word in words) {
+        for (length in (query.length - limit).coerceAtLeast(1)..(query.length + limit).coerceAtMost(word.length)) {
+            best = minOf(best, editDistanceAtMost(query, word.substring(0, length), limit))
+            if (best == 1) return best
+        }
+    }
+    return best
+}
+
+/** Levenshtein distance (two swapped letters count as two edits), capped at [limit] + 1. */
+private fun editDistanceAtMost(a: String, b: String, limit: Int): Int {
+    if (abs(a.length - b.length) > limit) return limit + 1
+    var previous = IntArray(b.length + 1) { it }
+    var current = IntArray(b.length + 1)
+    for (i in a.indices) {
+        current[0] = i + 1
+        var rowMin = current[0]
+        for (j in b.indices) {
+            current[j + 1] = minOf(
+                previous[j + 1] + 1, current[j] + 1,
+                previous[j] + if (a[i] == b[j]) 0 else 1,
+            )
+            rowMin = minOf(rowMin, current[j + 1])
+        }
+        // No later row can go below this one's smallest cell, so the limit is already out of reach.
+        if (rowMin > limit) return limit + 1
+        val swap = previous
+        previous = current
+        current = swap
+    }
+    return previous[b.length].coerceAtMost(limit + 1)
 }
 
 private fun isSubsequence(needle: String, haystack: String): Boolean {

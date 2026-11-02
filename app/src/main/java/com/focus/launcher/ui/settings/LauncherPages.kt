@@ -365,6 +365,10 @@ internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> 
             stringResource(R.string.settings_auto_launch), settings.autoLaunch,
             subtitle = stringResource(R.string.settings_auto_launch_summary),
         ) { v -> update { it.copy(autoLaunch = v) } }
+        ToggleRow(
+            stringResource(R.string.settings_typo_search), settings.typoSearch,
+            subtitle = stringResource(R.string.settings_typo_search_summary),
+        ) { v -> update { it.copy(typoSearch = v) } }
 
         Section(stringResource(R.string.settings_list))
         SettingRow(

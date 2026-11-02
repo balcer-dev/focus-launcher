@@ -105,6 +105,12 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `search forgives typos only once asked to`() {
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
+        val s = Settings(typoSearch = true)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `a file that is not a backup is refused`() {
         assertNull(Settings.fromBackup(JSONObject("""{"name": "something else", "v": 1}""")))
         assertNull(Settings.fromBackup(Settings().toJson().apply { remove("v") }))

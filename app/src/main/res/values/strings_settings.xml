@@ -188,6 +188,8 @@
     <string name="settings_auto_keyboard_summary">Start typing the moment you swipe to the drawer.</string>
     <string name="settings_auto_launch">Open when one app is left</string>
     <string name="settings_auto_launch_summary">Launches the app as soon as your search matches only one.</string>
+    <string name="settings_typo_search">Forgive typos</string>
+    <string name="settings_typo_search_summary">Also lists apps whose name is a letter or two off, below the other matches.</string>
     <string name="settings_list">List</string>
     <string name="settings_drawer_layout">Layout</string>
     <string name="settings_drawer_layout_summary">Grid: four apps to a row, each with a small grey icon.</string>
