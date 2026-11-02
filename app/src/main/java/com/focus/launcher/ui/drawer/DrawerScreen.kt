@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -294,12 +295,13 @@ fun DrawerScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
-        if (quick) VSpace(14.dp)
-        // Search bar
-        if (!quick) Row(
+    // The search field, at the top as it always was, or at the bottom: nearer the thumb, and right
+    // above the keyboard when that is open. The fast-and-pinned page has none.
+    val atBottom = settings.searchAtBottom && !quick
+    val searchBar: @Composable (top: Dp, bottom: Dp) -> Unit = { top, bottom ->
+        Row(
             Modifier
-                .padding(start = 24.dp, end = 24.dp, top = 14.dp, bottom = 10.dp)
+                .padding(start = 24.dp, end = 24.dp, top = top, bottom = bottom)
                 .fillMaxWidth()
                 .border(1.dp, c.faint)
                 .padding(horizontal = 16.dp),
@@ -335,6 +337,13 @@ fun DrawerScreen(
                 T(stringResource(R.string.drawer_search_clear), Modifier.clickable { onQueryChange("") }.padding(start = 12.dp, top = 8.dp, bottom = 8.dp), size = 14.sp, color = c.dim)
             }
         }
+    }
+
+    // At the bottom the field keeps clear of the navigation bar; imePadding after it adds only what the
+    // keyboard needs beyond that, so the two never stack.
+    Column(Modifier.fillMaxSize().statusBarsPadding().then(if (atBottom) Modifier.navigationBarsPadding() else Modifier).imePadding()) {
+        if (quick) VSpace(14.dp)
+        if (!quick && !atBottom) searchBar(14.dp, 10.dp)
 
         // Tabs and sort. Chips and the sort text carry their own padding, so both edges land on 30dp.
         if (!searching && !quick) {
@@ -487,6 +496,7 @@ fun DrawerScreen(
                 }
             }
         }
+        if (atBottom) searchBar(10.dp, 14.dp)
     }
 
     if (sortDialog) {

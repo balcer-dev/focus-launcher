@@ -182,6 +182,8 @@ data class Settings(
 
     // Drawer
     val listKeyboard: ListKeyboard = ListKeyboard.SWIPE_UP,
+    /** The app list's search field below the list instead of above it: nearer the thumb, right above the keyboard. */
+    val searchAtBottom: Boolean = false,
     val autoLaunch: Boolean = false,
     /** Search also lists names one or two edits away, below every closer match; [autoLaunch] ignores them. */
     val typoSearch: Boolean = false,
@@ -278,6 +280,7 @@ data class Settings(
         put("widgets", JSONArray().apply { widgets.forEach { put(it.toJson()) } })
 
         put("listKeyboard", listKeyboard.name)
+        put("searchAtBottom", searchAtBottom)
         // The switch it replaced, for an older version reading a backup: on only for ALWAYS.
         put("autoKeyboard", listKeyboard == ListKeyboard.ALWAYS)
         put("autoLaunch", autoLaunch)
@@ -391,6 +394,7 @@ data class Settings(
                 // Before the choice there was a switch: on is ALWAYS, off is what swipe up then did.
                 listKeyboard = ListKeyboard.entries.firstOrNull { it.name == o.optString("listKeyboard") }
                     ?: if (o.optBoolean("autoKeyboard", false)) ListKeyboard.ALWAYS else ListKeyboard.SWIPE_UP,
+                searchAtBottom = o.optBoolean("searchAtBottom", d.searchAtBottom),
                 autoLaunch = o.optBoolean("autoLaunch", d.autoLaunch),
                 typoSearch = o.optBoolean("typoSearch", d.typoSearch),
                 favoritesInDrawer = o.optBoolean("favoritesInDrawer", d.favoritesInDrawer),

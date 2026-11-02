@@ -415,6 +415,10 @@ internal fun DrawerPage(settings: Settings, onBack: () -> Unit, go: (String) -> 
         Section(stringResource(R.string.settings_search))
         ListKeyboardRow(settings)
         ToggleRow(
+            stringResource(R.string.settings_search_at_bottom), settings.searchAtBottom,
+            subtitle = stringResource(R.string.settings_search_at_bottom_summary),
+        ) { v -> update { it.copy(searchAtBottom = v) } }
+        ToggleRow(
             stringResource(R.string.settings_auto_launch), settings.autoLaunch,
             subtitle = stringResource(R.string.settings_auto_launch_summary),
         ) { v -> update { it.copy(autoLaunch = v) } }

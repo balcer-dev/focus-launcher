@@ -179,6 +179,8 @@
     <string name="list_keyboard_always">Zawsze</string>
     <string name="list_keyboard_swipe_up">Tylko po przesunięciu w górę</string>
     <string name="list_keyboard_never">Nigdy</string>
+    <string name="settings_search_at_bottom">Pole wyszukiwania na dole</string>
+    <string name="settings_search_at_bottom_summary">Pod listą, bliżej kciuka i tuż nad klawiaturą.</string>
     <string name="settings_auto_launch">Otwórz, gdy zostanie jedna</string>
     <string name="settings_auto_launch_summary">Uruchamia aplikację, gdy tylko wyszukiwanie pasuje do jednej.</string>
     <string name="settings_typo_search">Wybaczaj literówki</string>

@@ -198,6 +198,8 @@
     <string name="list_keyboard_always">Always</string>
     <string name="list_keyboard_swipe_up">Only after swipe up</string>
     <string name="list_keyboard_never">Never</string>
+    <string name="settings_search_at_bottom">Search field at the bottom</string>
+    <string name="settings_search_at_bottom_summary">Below the list, nearer your thumb and right above the keyboard.</string>
     <string name="settings_auto_launch">Open when one app is left</string>
     <string name="settings_auto_launch_summary">Launches the app as soon as your search matches only one.</string>
     <string name="settings_typo_search">Forgive typos</string>

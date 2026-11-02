@@ -146,6 +146,13 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `the search field stays at the top unless moved down`() {
+        assertEquals(false, Settings().searchAtBottom)
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("searchAtBottom") }).searchAtBottom)
+        val s = Settings(searchAtBottom = true)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `search forgives typos only once asked to`() {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)
