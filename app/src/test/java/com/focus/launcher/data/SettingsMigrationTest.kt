@@ -132,6 +132,13 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `fast apps keep the page alignment they had until given their own`() {
+        val before = Settings(homeAlign = HomeAlign.RIGHT).toJson().apply { remove("favoriteAlign") }
+        assertEquals(HomeAlign.RIGHT, Settings.fromJson(before).favoriteAlign)
+        val s = Settings(homeAlign = HomeAlign.LEFT, favoriteAlign = HomeAlign.CENTER)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `search forgives typos only once asked to`() {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)

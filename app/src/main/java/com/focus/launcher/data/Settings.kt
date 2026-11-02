@@ -143,6 +143,8 @@ data class Settings(
     val favorites: List<String> = emptyList(),
     /** Off: no fast apps on the home screen, nor the hint to add some. They stay set for [favoritesInDrawer]. */
     val showFavoritesOnHome: Boolean = true,
+    /** The fast apps' own alignment; [homeAlign] is the clock's and the sections'. Older settings take [homeAlign]. */
+    val favoriteAlign: HomeAlign = HomeAlign.CENTER,
     val favoriteSize: FavoriteSize = FavoriteSize.LARGE,
     val favoriteStyle: FavoriteStyle = FavoriteStyle.NAME,
     /** Fast app icons in the apps' own colours. An app whose time is up stays grey either way. */
@@ -250,6 +252,7 @@ data class Settings(
         put("homeAlign", homeAlign.name)
         put("favorites", JSONArray(favorites))
         put("showFavoritesOnHome", showFavoritesOnHome)
+        put("favoriteAlign", favoriteAlign.name)
         put("favoriteSize", favoriteSize.name)
         put("favoriteStyle", favoriteStyle.name)
         put("colourFavoriteIcons", colourFavoriteIcons)
@@ -357,6 +360,8 @@ data class Settings(
                 homeAlign = enumOr(o.optString("homeAlign"), d.homeAlign),
                 favorites = o.optJSONArray("favorites").strings().take(MAX_FAVORITES),
                 showFavoritesOnHome = o.optBoolean("showFavoritesOnHome", d.showFavoritesOnHome),
+                // Settings from before had one alignment for the whole page: the fast apps keep it.
+                favoriteAlign = enumOr(o.optString("favoriteAlign"), enumOr(o.optString("homeAlign"), d.homeAlign)),
                 favoriteSize = enumOr(o.optString("favoriteSize"), d.favoriteSize),
                 favoriteStyle = enumOr(o.optString("favoriteStyle"), d.favoriteStyle),
                 colourFavoriteIcons = o.optBoolean("colourFavoriteIcons", d.colourFavoriteIcons),

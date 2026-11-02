@@ -70,7 +70,7 @@ private fun update(transform: (Settings) -> Settings) = Graph.settings.update(tr
 
 // ---- Home screen -----------------------------------------------------------------------------
 
-private enum class HomeDialog { NONE, CLOCK, SPLIT_SIDE, RING, TAP, TIME_FORMAT, FAVORITE_SIZE, FAVORITE_STYLE, ALIGN, LEFT, RIGHT, CALENDAR, MUSIC_APP, NOTE_APP }
+private enum class HomeDialog { NONE, CLOCK, SPLIT_SIDE, RING, TAP, TIME_FORMAT, FAVORITE_SIZE, FAVORITE_STYLE, FAVORITE_ALIGN, ALIGN, LEFT, RIGHT, CALENDAR, MUSIC_APP, NOTE_APP }
 
 @Composable
 internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Unit, go: (String) -> Unit) {
@@ -137,6 +137,12 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             subtitle = stringResource(R.string.settings_show_seconds_summary),
         ) { v -> update { it.copy(showSeconds = v) } }
         ToggleRow(stringResource(R.string.settings_show_date), settings.showDate) { v -> update { it.copy(showDate = v) } }
+        SettingRow(
+            stringResource(R.string.settings_alignment),
+            subtitle = stringResource(R.string.settings_alignment_page_summary),
+            value = stringResource(settings.homeAlign.labelRes),
+            onClick = { dialog = HomeDialog.ALIGN },
+        )
 
         Section(stringResource(R.string.settings_sections))
         ToggleRow(
@@ -210,7 +216,7 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             stringResource(R.string.settings_fast_apps_on_home), settings.showFavoritesOnHome,
             subtitle = stringResource(R.string.settings_fast_apps_on_home_summary),
         ) { v -> update { it.copy(showFavoritesOnHome = v) } }
-        // How they look matters only where they are shown; the alignment is the whole page's.
+        // How they look and sit matters only where they are shown.
         val onHome = settings.showFavoritesOnHome
         SettingRow(
             stringResource(R.string.settings_favorite_style),
@@ -232,7 +238,12 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             enabled = onHome,
             onClick = { dialog = HomeDialog.FAVORITE_SIZE },
         )
-        SettingRow(stringResource(R.string.settings_alignment), value = stringResource(settings.homeAlign.labelRes), onClick = { dialog = HomeDialog.ALIGN })
+        SettingRow(
+            stringResource(R.string.settings_alignment),
+            value = stringResource(settings.favoriteAlign.labelRes),
+            enabled = onHome,
+            onClick = { dialog = HomeDialog.FAVORITE_ALIGN },
+        )
 
         Section(stringResource(R.string.settings_corner_shortcuts))
         ToggleRow(stringResource(R.string.settings_show_shortcuts), settings.showShortcuts) { v -> update { it.copy(showShortcuts = v) } }
@@ -290,6 +301,11 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             HomeAlign.entries.map { it to stringResource(it.labelRes) },
             settings.homeAlign, close,
         ) { v -> update { it.copy(homeAlign = v) } }
+        HomeDialog.FAVORITE_ALIGN -> ChoiceDialog(
+            stringResource(R.string.settings_alignment),
+            HomeAlign.entries.map { it to stringResource(it.labelRes) },
+            settings.favoriteAlign, close,
+        ) { v -> update { it.copy(favoriteAlign = v) } }
         HomeDialog.MUSIC_APP -> MusicAppPicker(
             apps = apps.filter { it.key !in settings.hidden },
             subtitle = null,

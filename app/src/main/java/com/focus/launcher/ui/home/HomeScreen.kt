@@ -497,18 +497,21 @@ fun HomeScreen(
                 T(
                     stringResource(if (settings.showWidgetPage) R.string.home_favorites_empty_widgets else R.string.home_favorites_empty),
                     Modifier.fillMaxWidth().clickable { onOpenDrawer(false) }.padding(horizontal = 12.dp, vertical = 8.dp),
-                    size = 15.sp, color = c.dim, align = settings.homeAlign.text(), lineHeight = 23.sp,
+                    size = 15.sp, color = c.dim, align = settings.favoriteAlign.text(), lineHeight = 23.sp,
                 )
             } else if (favoriteColumns == 1) {
-                for (app in favorites) {
-                    FavoriteRow(app, settings, favoriteSize, favoritePadding, favoriteIcon, dimmed = app.key in spent, onLaunch, onAppMenu)
+                // Their own column: the fast apps have an alignment apart from the rest of the page.
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = settings.favoriteAlign.horizontal()) {
+                    for (app in favorites) {
+                        FavoriteRow(app, settings, favoriteSize, favoritePadding, favoriteIcon, dimmed = app.key in spent, onLaunch, onAppMenu)
+                    }
                 }
             } else {
                 // Filled top to bottom: the first half on the left, the rest on the right, so the
                 // order chosen in settings still reads down the first column and then the second.
                 Row(Modifier.fillMaxWidth()) {
                     for (column in favorites.chunked((favorites.size + 1) / 2)) {
-                        Column(Modifier.weight(1f), horizontalAlignment = settings.homeAlign.horizontal()) {
+                        Column(Modifier.weight(1f), horizontalAlignment = settings.favoriteAlign.horizontal()) {
                             for (app in column) {
                                 FavoriteRow(app, settings, favoriteSize, favoritePadding, favoriteIcon, dimmed = app.key in spent, onLaunch, onAppMenu)
                             }

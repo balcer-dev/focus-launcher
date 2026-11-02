@@ -162,6 +162,7 @@
     <string name="settings_favorite_style">Show</string>
     <string name="settings_favorite_size">Text size</string>
     <string name="settings_alignment">Alignment</string>
+    <string name="settings_alignment_page_summary">The clock and the sections under it. The fast apps have their own.</string>
     <string name="settings_corner_shortcuts">Corner shortcuts</string>
     <string name="settings_show_shortcuts">Show shortcuts</string>
     <string name="settings_bottom_left">Bottom left</string>

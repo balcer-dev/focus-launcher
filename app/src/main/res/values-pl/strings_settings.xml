@@ -148,6 +148,7 @@
     <string name="settings_favorite_style">Pokazuj</string>
     <string name="settings_favorite_size">Rozmiar tekstu</string>
     <string name="settings_alignment">Wyrównanie</string>
+    <string name="settings_alignment_page_summary">Zegar i sekcje pod nim. Szybkie aplikacje mają własne.</string>
     <string name="settings_corner_shortcuts">Skróty w rogach</string>
     <string name="settings_show_shortcuts">Pokazuj skróty</string>
     <string name="settings_bottom_left">Lewy dolny</string>
