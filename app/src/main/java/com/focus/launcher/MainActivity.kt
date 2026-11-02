@@ -6,6 +6,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
@@ -26,9 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -46,8 +54,10 @@ import com.focus.launcher.ui.drawer.DrawerMode
 import com.focus.launcher.ui.drawer.DrawerScreen
 import com.focus.launcher.ui.home.HomeScreen
 import com.focus.launcher.ui.launchApp
+import com.focus.launcher.ui.PullDownToClose
 import com.focus.launcher.ui.openWebSearch
 import com.focus.launcher.ui.theme.FocusTheme
+import com.focus.launcher.ui.theme.LocalFocusColors
 import com.focus.launcher.ui.theme.applyFocusWindow
 import com.focus.launcher.ui.widgets.WidgetController
 import com.focus.launcher.ui.widgets.WidgetPage
@@ -178,6 +188,8 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     // dialogs close as soon as it is left.
     val pagerDragged by pager.interactionSource.collectIsDraggedAsState()
     val activePage by remember { derivedStateOf { if (pagerDragged) pager.settledPage else pager.targetPage } }
+    // The page under swipe up, when it stands in no sequence, slides up over the home screen.
+    var sheetOpen by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var menuApp by remember { mutableStateOf<AppEntry?>(null) }
     var wantsSearchFocus by remember { mutableStateOf(false) }
@@ -208,11 +220,13 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     }
 
     // Leaving the launcher (an app was opened, the screen went off) always resets it to the home
-    // screen. Except while a widget is being added: the system's permission screen and the widget's
-    // own setup come in between, and the new widget should be in view on the way back.
+    // screen, with no page slid up. Except while a widget is being added: the system's permission
+    // screen and the widget's own setup come in between, and the new widget should be in view on
+    // the way back, on the widgets page wherever that is.
     LifecycleStartEffect(Unit) {
         onStopOrDispose {
             if (!(widgets.isInitialized() && widgets.value.awaitingResult)) {
+                sheetOpen = false
                 query = ""
                 menuApp = null
                 wantsSearchFocus = false
@@ -228,6 +242,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     LaunchedEffect(layout) {
         if (layout != shownLayout) {
             shownLayout = layout
+            sheetOpen = false
             pager.scrollToPage(layout.homePage)
         }
     }
@@ -238,15 +253,17 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
 
     LaunchedEffect(Unit) {
         homePresses.collect {
+            sheetOpen = false
             menuApp = null
             query = ""
             if (pager.currentPage != current.homePage) pager.animateScrollToPage(current.homePage)
         }
     }
 
-    // A launcher is never "backed out of": back only returns to the home screen.
+    // A launcher is never "backed out of": back closes the page slid up, else returns to the home screen.
     BackHandler {
-        if (pager.currentPage != current.homePage) scope.launch { pager.animateScrollToPage(current.homePage) }
+        if (sheetOpen) sheetOpen = false
+        else if (pager.currentPage != current.homePage) scope.launch { pager.animateScrollToPage(current.homePage) }
     }
 
     val launch: (AppEntry) -> Unit = { entry -> launchApp(context, scope, entry) }
@@ -265,6 +282,9 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
         if (index >= 0) {
             wantsSearchFocus = focusSearch && page == LauncherPage.ALL_APPS
             scope.launch { pager.animateScrollToPage(index) }
+        } else if (page == current.sheet) {
+            wantsSearchFocus = focusSearch && page == LauncherPage.ALL_APPS
+            sheetOpen = true
         }
     }
     val swipeUp: () -> Unit = {
@@ -327,61 +347,85 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
         }
     }
 
-    HorizontalPager(
-        state = pager,
-        // Where a sideways swipe has an app or the web search instead of pages, there is no page that
-        // way and the pager ignores the swipe. Watch it on the way down (Initial pass, nothing
-        // consumed) and run the action instead, the way the page left of a stock home screen opens.
-        modifier = Modifier.fillMaxSize().pointerInput(layout, installedKeys) {
-            val toRight = layout.actionFor(Swipe.RIGHT)
-            val toLeft = layout.actionFor(Swipe.LEFT)
-            if (toRight == null && toLeft == null) return@pointerInput
-            val threshold = 72.dp.toPx()
-            awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                if (pager.currentPage != layout.homePage || pager.isScrollInProgress) return@awaitEachGesture
-                while (true) {
-                    val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
-                    if (!change.pressed) break
-                    val moved = change.position - down.position
-                    val sideways = abs(moved.x) > abs(moved.y) * 2
-                    if (sideways && moved.x > threshold && toRight != null) {
-                        runAction(toRight)
-                        Graph.state.did(Tip.SWIPE_RIGHT)
-                        break
-                    }
-                    if (sideways && -moved.x > threshold && toLeft != null) {
-                        runAction(toLeft)
-                        break
+    val pullThreshold = with(LocalDensity.current) { 64.dp.toPx() }
+    val closeOnPull = remember(pullThreshold) { PullDownToClose(pullThreshold) { sheetOpen = false } }
+    Box(Modifier.fillMaxSize()) {
+        HorizontalPager(
+            state = pager,
+            // Where a sideways swipe has an app or the web search instead of pages, there is no page that
+            // way and the pager ignores the swipe. Watch it on the way down (Initial pass, nothing
+            // consumed) and run the action instead, the way the page left of a stock home screen opens.
+            modifier = Modifier.fillMaxSize().pointerInput(layout, installedKeys) {
+                val toRight = layout.actionFor(Swipe.RIGHT)
+                val toLeft = layout.actionFor(Swipe.LEFT)
+                if (toRight == null && toLeft == null) return@pointerInput
+                val threshold = 72.dp.toPx()
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    if (pager.currentPage != layout.homePage || pager.isScrollInProgress) return@awaitEachGesture
+                    while (true) {
+                        val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        val moved = change.position - down.position
+                        val sideways = abs(moved.x) > abs(moved.y) * 2
+                        if (sideways && moved.x > threshold && toRight != null) {
+                            runAction(toRight)
+                            Graph.state.did(Tip.SWIPE_RIGHT)
+                            break
+                        }
+                        if (sideways && -moved.x > threshold && toLeft != null) {
+                            runAction(toLeft)
+                            break
+                        }
                     }
                 }
-            }
-        },
-        // Every page stays composed, as when there were only two: the app list is ready, search
-        // field and all, the moment a swipe up asks for it.
-        beyondViewportPageCount = layout.pageCount - 1,
-        // By page, not by number: the home screen keeps its state when the pages around it move.
-        key = { index -> if (index == layout.homePage) "home" else layout.pages.getOrNull(index)?.name ?: "page:$index" },
-    ) { index ->
-        if (index !in layout.pages.indices) return@HorizontalPager
-        val page = layout.pages[index]
-        // The page being left fades and sinks back a touch while the other one arrives. Done in
-        // graphicsLayer, which runs in the draw phase: the swipe never triggers a recomposition.
-        Box(
-            Modifier.fillMaxSize().graphicsLayer {
-                val distance = ((pager.currentPage - index) + pager.currentPageOffsetFraction).absoluteValue.coerceIn(0f, 1f)
-                // Text on a flat background never overlaps itself, so each draw call can simply be
-                // made more transparent. The default would render the whole page into a full-screen
-                // off-screen buffer on every frame of the swipe: more memory and GPU for no gain.
-                // Widgets are pictures that do overlap, so their page fades as one layer.
-                compositingStrategy = if (page == LauncherPage.WIDGETS) CompositingStrategy.Auto else CompositingStrategy.ModulateAlpha
-                alpha = (1f - distance * 1.2f).coerceIn(0f, 1f)
-                val scale = 1f - 0.05f * distance
-                scaleX = scale
-                scaleY = scale
             },
-        ) {
-            pageContent(page, activePage == index)
+            // Every page stays composed, as when there were only two: the app list is ready, search
+            // field and all, the moment a swipe up asks for it.
+            beyondViewportPageCount = layout.pageCount - 1,
+            // By page, not by number: the home screen keeps its state when the pages around it move.
+            key = { index -> if (index == layout.homePage) "home" else layout.pages.getOrNull(index)?.name ?: "page:$index" },
+        ) { index ->
+            if (index !in layout.pages.indices) return@HorizontalPager
+            val page = layout.pages[index]
+            // The page being left fades and sinks back a touch while the other one arrives. Done in
+            // graphicsLayer, which runs in the draw phase: the swipe never triggers a recomposition.
+            Box(
+                Modifier.fillMaxSize().graphicsLayer {
+                    val distance = ((pager.currentPage - index) + pager.currentPageOffsetFraction).absoluteValue.coerceIn(0f, 1f)
+                    // Text on a flat background never overlaps itself, so each draw call can simply be
+                    // made more transparent. The default would render the whole page into a full-screen
+                    // off-screen buffer on every frame of the swipe: more memory and GPU for no gain.
+                    // Widgets are pictures that do overlap, so their page fades as one layer.
+                    compositingStrategy = if (page == LauncherPage.WIDGETS) CompositingStrategy.Auto else CompositingStrategy.ModulateAlpha
+                    alpha = (1f - distance * 1.2f).coerceIn(0f, 1f)
+                    val scale = 1f - 0.05f * distance
+                    scaleX = scale
+                    scaleY = scale
+                },
+            ) {
+                pageContent(page, activePage == index)
+            }
+        }
+
+        layout.sheet?.let { page ->
+            AnimatedVisibility(
+                visible = sheetOpen,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut(),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(LocalFocusColors.current.bg)
+                        // Takes every touch, whether or not something on the page wants it: the pager
+                        // underneath would otherwise swipe from the page's empty places.
+                        .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false) } }
+                        .nestedScroll(closeOnPull),
+                ) {
+                    pageContent(page, sheetOpen)
+                }
+            }
         }
     }
 
