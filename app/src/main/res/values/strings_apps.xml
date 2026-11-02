@@ -27,6 +27,8 @@
     <!-- %1$s is what the user typed into the search bar. -->
     <string name="drawer_no_match">No app matches “%1$s”</string>
     <string name="drawer_no_apps">No apps</string>
+    <!-- The fast-and-pinned page with neither: how to fill it. The verbs are the app menu's. -->
+    <string name="drawer_quick_empty">No fast or pinned apps yet.\nIn the app list, long-press an app to move it to fast apps or pin it.</string>
     <!-- Next to an app with a timer: %1$s is the time used today, %2$s the daily limit, e.g. "48m / 1h". -->
     <string name="drawer_usage_of_limit">%1$s / %2$s</string>
 

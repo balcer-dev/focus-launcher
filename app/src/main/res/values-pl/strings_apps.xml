@@ -18,6 +18,7 @@
     <string name="drawer_loading">Wczytywanie…</string>
     <string name="drawer_no_match">Żadna aplikacja nie pasuje do „%1$s”</string>
     <string name="drawer_no_apps">Brak aplikacji</string>
+    <string name="drawer_quick_empty">Nie ma tu jeszcze szybkich ani przypiętych aplikacji.\nNa liście aplikacji przytrzymaj aplikację, żeby dodać ją do szybkich albo przypiąć.</string>
     <string name="drawer_usage_of_limit">%1$s / %2$s</string>
 
     <!-- Menu aplikacji -->

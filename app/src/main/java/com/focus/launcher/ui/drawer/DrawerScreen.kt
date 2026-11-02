@@ -113,6 +113,9 @@ private val ICON_SIZE = 40.dp
  * both profiles and ranks by match, pinned or not. No icons, unless the grid view is chosen in
  * settings: the same sections, four apps to a row with small icons, grey unless colour is chosen too.
  * Long-press an app for its menu.
+ *
+ * In [DrawerMode.QUICK] it is the fast-and-pinned page: those two sections alone, of both profiles,
+ * with no search, tabs, sort, recent installs or A–Z.
  */
 @Composable
 fun DrawerScreen(
@@ -129,7 +132,9 @@ fun DrawerScreen(
     onAppMenu: (AppEntry) -> Unit,
     /** A tip that is about this page, shown under the search bar until it has been done. */
     hint: String? = null,
+    mode: DrawerMode = DrawerMode.ALL,
 ) {
+    val quick = mode == DrawerMode.QUICK
     val c = LocalFocusColors.current
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -168,7 +173,7 @@ fun DrawerScreen(
         }
     }
     LaunchedEffect(sort, isActive) {
-        if (isActive && sort != DrawerSort.ALPHA) stats = withContext(Dispatchers.IO) { Graph.usage.sortStats() }
+        if (isActive && !quick && sort != DrawerSort.ALPHA) stats = withContext(Dispatchers.IO) { Graph.usage.sortStats() }
     }
     // Usage inside a work profile is invisible to us, so those apps count as 0 and stay
     // alphabetical. sortedByDescending is stable: ties keep their A–Z order.
@@ -179,33 +184,29 @@ fun DrawerScreen(
             DrawerSort.RECENT -> inProfile.sortedByDescending { if (it.isWorkProfile) 0L else stats[it.packageName]?.second ?: 0L }
         }
     }
-    // Optional, and first of all: the home screen's fast apps of this tab, in their order there.
-    // Keys of apps that are gone or hidden find nothing, here as with the pins.
-    val favoriteApps = remember(inProfile, settings.favorites, settings.favoritesInDrawer) {
-        if (!settings.favoritesInDrawer) emptyList()
-        else {
-            val byKey = inProfile.associateBy { it.key }
-            settings.favorites.mapNotNull { byKey[it] }
-        }
+    // First of all the home screen's fast apps, in their order there, then the pinned apps in the
+    // order they were pinned; one that is both is listed once, with the fast apps. In the list: of
+    // this tab, and the fast apps only once asked for. On the fast-and-pinned page: both profiles
+    // together, as on the home screen, and the fast apps whatever the list does.
+    val sections = remember(visible, inProfile, settings.favorites, settings.favoritesInDrawer, settings.pinned, quick) {
+        if (quick) quickSections(visible, { it.key }, settings.favorites, settings.pinned)
+        else quickSections(inProfile, { it.key }, if (settings.favoritesInDrawer) settings.favorites else emptyList(), settings.pinned)
     }
-    // Pinned apps of this tab, in the order they were pinned. One that is a fast app too is listed once, with those.
-    val pinnedApps = remember(inProfile, settings.pinned, favoriteApps) {
-        val byKey = inProfile.associateBy { it.key }
-        val fast = favoriteApps.mapTo(HashSet()) { it.key }
-        settings.pinned.filter { it !in fast }.mapNotNull { byKey[it] }
-    }
+    val favoriteApps = sections.first
+    val pinnedApps = sections.second
     // Every app already listed above the main list. The recent installs leave all of them out; the
     // main list too, except the fast apps when they are to keep their place in it as well.
     val above = remember(settings.pinned, favoriteApps) { settings.pinned.toSet() + favoriteApps.map { it.key } }
     val leftOut = if (settings.favoritesAlsoInList) settings.pinned.toSet() else above
     // Search ignores tab, sort, pins and fast apps: it looks through both profiles and ranks by match.
     // Without a query the list is everything not already above it.
-    val results = remember(visible, sorted, leftOut, query, searchNames, settings.typoSearch) {
-        if (query.isBlank()) sorted.filter { it.key !in leftOut }
+    val results = remember(visible, sorted, leftOut, query, searchNames, settings.typoSearch, quick) {
+        if (quick) emptyList()
+        else if (query.isBlank()) sorted.filter { it.key !in leftOut }
         else searchApps(visible, query, searchNames, typos = settings.typoSearch)
     }
-    val recent = remember(inProfile, settings.showRecentInstalls, above) {
-        if (!settings.showRecentInstalls) emptyList()
+    val recent = remember(inProfile, settings.showRecentInstalls, above, quick) {
+        if (quick || !settings.showRecentInstalls) emptyList()
         else {
             val cutoff = System.currentTimeMillis() - DAY_MS
             inProfile.filter { it.firstInstallTime >= cutoff && it.packageName != Graph.app.packageName && it.key !in above }
@@ -225,6 +226,7 @@ fun DrawerScreen(
     val emptyText = when {
         results.isNotEmpty() || (!searching && (pinnedApps.isNotEmpty() || favoriteApps.isNotEmpty())) -> null
         !loaded -> stringResource(R.string.drawer_loading)
+        quick -> stringResource(R.string.drawer_quick_empty)
         searching -> stringResource(R.string.drawer_no_match, query.trim())
         else -> stringResource(R.string.drawer_no_apps)
     }
@@ -235,8 +237,9 @@ fun DrawerScreen(
 
     // The keyboard only ever opens on purpose: by the "open right away" setting, by swiping up on
     // the home screen, or by tapping the search bar. In every other case make sure it is closed.
+    // The fast-and-pinned page has no search field: asking it for focus would throw.
     LaunchedEffect(isActive) {
-        if (isActive && (settings.autoKeyboard || wantsSearchFocus)) {
+        if (isActive && !quick && (settings.autoKeyboard || wantsSearchFocus)) {
             searchFocus.requestFocus()
             keyboard?.show()
             onSearchFocusHandled()
@@ -289,8 +292,9 @@ fun DrawerScreen(
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding().imePadding()) {
+        if (quick) VSpace(14.dp)
         // Search bar
-        Row(
+        if (!quick) Row(
             Modifier
                 .padding(start = 24.dp, end = 24.dp, top = 14.dp, bottom = 10.dp)
                 .fillMaxWidth()
@@ -330,7 +334,7 @@ fun DrawerScreen(
         }
 
         // Tabs and sort. Chips and the sort text carry their own padding, so both edges land on 30dp.
-        if (!searching) {
+        if (!searching && !quick) {
             Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 18.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (hasWork) {
                     TabChip(stringResource(R.string.drawer_tab_personal), !workTab) { showWork = false }
@@ -352,7 +356,7 @@ fun DrawerScreen(
 
         var scrubbing by remember { mutableStateOf<Char?>(null) }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            val showIndex = !searching && sort == DrawerSort.ALPHA && letters.size > 5 && maxHeight > (letters.size * 15).dp
+            val showIndex = !quick && !searching && sort == DrawerSort.ALPHA && letters.size > 5 && maxHeight > (letters.size * 15).dp
 
             if (grid) {
                 AppGrid(
@@ -487,6 +491,21 @@ fun DrawerScreen(
             Graph.settings.update { it.copy(drawerSort = v) }
         }
     }
+}
+
+/** ALL: the app list, search and all. QUICK: the fast and pinned apps alone, a page of their own. */
+enum class DrawerMode { ALL, QUICK }
+
+/**
+ * The two sections above the app list, which are the whole of the fast-and-pinned page: the [apps]
+ * among [favorites] in that order, then those among [pinned] not already with them, in that order.
+ * Keys of apps not in [apps] (gone, hidden, of the other tab) find nothing.
+ */
+internal fun <T> quickSections(apps: List<T>, key: (T) -> String, favorites: List<String>, pinned: List<String>): Pair<List<T>, List<T>> {
+    val byKey = apps.associateBy(key)
+    val fast = favorites.mapNotNull { byKey[it] }.distinct()
+    val fastKeys = fast.mapTo(HashSet(), key)
+    return fast to pinned.filter { it !in fastKeys }.mapNotNull { byKey[it] }.distinct()
 }
 
 /** Sections of the list whose order can be changed right there, with arrows. */

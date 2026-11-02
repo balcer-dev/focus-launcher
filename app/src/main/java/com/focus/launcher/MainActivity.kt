@@ -42,6 +42,7 @@ import com.focus.launcher.data.Swipe
 import com.focus.launcher.data.SwipeTarget
 import com.focus.launcher.service.WeeklyReview
 import com.focus.launcher.ui.drawer.AppMenu
+import com.focus.launcher.ui.drawer.DrawerMode
 import com.focus.launcher.ui.drawer.DrawerScreen
 import com.focus.launcher.ui.home.HomeScreen
 import com.focus.launcher.ui.launchApp
@@ -309,7 +310,20 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
                     stringResource(R.string.tip_hint, stringResource(it.gestureRes), stringResource(it.resultRes))
                 },
             )
-            LauncherPage.QUICK -> Box(Modifier.fillMaxSize())
+            LauncherPage.QUICK -> DrawerScreen(
+                settings = settings,
+                apps = apps,
+                loaded = loaded,
+                today = today,
+                query = "",
+                onQueryChange = {},
+                isActive = isActive,
+                wantsSearchFocus = false,
+                onSearchFocusHandled = {},
+                onLaunch = launch,
+                onAppMenu = { Graph.state.did(Tip.APP_MENU); menuApp = it },
+                mode = DrawerMode.QUICK,
+            )
         }
     }
 
