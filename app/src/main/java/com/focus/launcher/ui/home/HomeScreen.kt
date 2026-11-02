@@ -26,7 +26,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -85,8 +84,11 @@ import com.focus.launcher.data.FavoriteStyle
 import com.focus.launcher.data.FontChoice
 import com.focus.launcher.data.SHORTCUT_CAMERA
 import com.focus.launcher.data.SHORTCUT_PHONE
+import com.focus.launcher.data.LauncherPage
+import com.focus.launcher.data.Place
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.SplitSide
+import com.focus.launcher.data.Swipe
 import com.focus.launcher.data.SwipeTarget
 import com.focus.launcher.data.TAP_ALARMS
 import com.focus.launcher.data.TAP_BATTERY
@@ -95,6 +97,8 @@ import com.focus.launcher.data.TAP_NOTHING
 import com.focus.launcher.data.TAP_SCREEN_TIME
 import com.focus.launcher.data.TimeFormat
 import com.focus.launcher.data.TodoItem
+import com.focus.launcher.data.placeOf
+import com.focus.launcher.data.tipFor
 import com.focus.launcher.service.FocusAccessibilityService
 import com.focus.launcher.ui.components.AppIcon
 import com.focus.launcher.ui.components.AppPickerDialog
@@ -106,6 +110,8 @@ import com.focus.launcher.ui.components.hasColourGlyphs
 import com.focus.launcher.ui.components.monochrome
 import com.focus.launcher.ui.components.press
 import com.focus.launcher.ui.launchOptions
+import com.focus.launcher.ui.swipePhrase
+import com.focus.launcher.ui.tipResult
 import com.focus.launcher.ui.theme.LocalFocusColors
 import com.focus.launcher.ui.theme.LocalTextScale
 import com.focus.launcher.util.Perms
@@ -186,9 +192,11 @@ fun HomeScreen(
     var editingShortcut by remember { mutableStateOf<Boolean?>(null) } // true = left, false = right
     var choosingClockTap by remember { mutableStateOf(false) }
     val tip by Graph.state.tip.collectAsStateWithLifecycle()
-    // A tip about something that is not on the screen teaches nothing: pass over it.
-    LaunchedEffect(tip, settings.showMusic, settings.showNote, settings.showShortcuts) {
-        val absent = (tip == Tip.SECTION_APPS && !settings.showMusic && !settings.showNote) || (tip == Tip.CORNERS && !settings.showShortcuts)
+    // A tip about something that is not on the screen teaches nothing: pass over it. So is one
+    // about a swipe that has nothing under it.
+    LaunchedEffect(tip, settings.showMusic, settings.showNote, settings.showShortcuts, settings.gestures) {
+        val absent = (tip == Tip.SECTION_APPS && !settings.showMusic && !settings.showNote) || (tip == Tip.CORNERS && !settings.showShortcuts) ||
+            tip?.swipe?.let { settings.gestures.tipFor(it) == null } == true
         if (absent) Graph.state.nextTip()
     }
     var editingNote by remember { mutableStateOf(false) }
@@ -426,11 +434,17 @@ fun HomeScreen(
                 }
                 // One thing a new user could not guess, until they have done it once. A tap moves on.
                 tip?.let { current ->
-                    // With the widgets page in between, the app list is two swipes away.
-                    val gesture = if (current == Tip.SWIPE_LEFT && settings.showWidgetPage) R.string.tip_swipe_left_twice else current.gestureRes
-                    TipLine(current, gesture) {
-                        Graph.state.nextTip()
-                        if (current == Tip.SECTIONS) onOpenSettings("home")
+                    // A swipe's tip says what that swipe really leads to, and how many swipes away;
+                    // one with nothing under its swipe is about to be passed over, so not shown.
+                    val swipe = current.swipe
+                    val swipeTip = swipe?.let { settings.gestures.tipFor(it) }
+                    if (swipe == null || swipeTip != null) {
+                        val gesture = if (swipe != null && swipeTip != null) swipePhrase(swipe, swipeTip.times) else stringResource(current.gestureRes)
+                        val result = if (swipe != null && swipeTip != null) tipResult(swipeTip, swipe, apps) else stringResource(current.resultRes)
+                        TipLine(current, gesture, result) {
+                            Graph.state.nextTip()
+                            if (current == Tip.SECTIONS) onOpenSettings("home")
+                        }
                     }
                 }
             }
@@ -501,8 +515,10 @@ fun HomeScreen(
             if (!settings.showFavoritesOnHome) {
                 // Turned off on purpose, so not even the hint to add some: they may live in the app list only.
             } else if (favorites.isEmpty()) {
+                // Says where all apps really are. They are always somewhere (see GestureLayout.normalized).
+                val allApps = settings.gestures.placeOf(LauncherPage.ALL_APPS) ?: Place(Swipe.UP, 1)
                 T(
-                    stringResource(if (settings.showWidgetPage) R.string.home_favorites_empty_widgets else R.string.home_favorites_empty),
+                    stringResource(R.string.home_favorites_empty_at, swipePhrase(allApps.swipe, allApps.position)),
                     Modifier.fillMaxWidth().clickable { onOpenDrawer(false) }.padding(horizontal = 12.dp, vertical = 8.dp),
                     size = 15.sp, color = c.dim, align = settings.favoriteAlign.text(), lineHeight = 23.sp,
                 )
@@ -723,7 +739,7 @@ fun HomeScreen(
  * line; if a large text size makes it longer it wraps, it is never cut off. A tap skips it.
  */
 @Composable
-private fun TipLine(tip: Tip, @StringRes gestureRes: Int = tip.gestureRes, onClick: () -> Unit) {
+private fun TipLine(tip: Tip, gesture: String, result: String, onClick: () -> Unit) {
     val c = LocalFocusColors.current
     Column(
         Modifier
@@ -740,9 +756,9 @@ private fun TipLine(tip: Tip, @StringRes gestureRes: Int = tip.gestureRes, onCli
         )
         VSpace(5.dp)
         Row(verticalAlignment = Alignment.Top) {
-            T(stringResource(gestureRes), size = 16.sp, weight = FontWeight.Medium, maxLines = 1)
+            T(gesture, size = 16.sp, weight = FontWeight.Medium, maxLines = 1)
             T("  →  ", size = 16.sp, color = c.dim, maxLines = 1)
-            T(stringResource(tip.resultRes), Modifier.weight(1f, fill = false), size = 16.sp, color = c.dim)
+            T(result, Modifier.weight(1f, fill = false), size = 16.sp, color = c.dim)
         }
     }
 }

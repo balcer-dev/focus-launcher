@@ -58,7 +58,7 @@
     <string name="settings_about_privacy">Prywatność</string>
     <string name="settings_about_privacy_text">Focus nie ma uprawnienia do internetu, więc nic, co wie, nie może opuścić tego telefonu. Czas przed ekranem jest odczytywany z dziennika użycia Androida i przechowywany tylko w prywatnej pamięci aplikacji. Usługa minutników widzi nazwę aplikacji na pierwszym planie i nic więcej; nie może odczytać tego, co jest na ekranie.</string>
     <string name="settings_about_tips">Wskazówki</string>
-    <string name="settings_about_tip_drawer">Przesuń w lewo na ekranie głównym, żeby zobaczyć wszystkie aplikacje.</string>
+    <string name="settings_about_tip_drawer_at">%1$s na ekranie głównym, żeby zobaczyć wszystkie aplikacje.</string>
     <string name="settings_about_tip_app_menu">Przytrzymaj dowolną aplikację, żeby otworzyć jej menu: minutnik, zmiana nazwy, ukrywanie, szybkie aplikacje.</string>
     <string name="settings_about_tip_settings">Przytrzymaj puste miejsce na ekranie głównym, żeby otworzyć te ustawienia.</string>
     <string name="settings_about_tip_corners">Przytrzymaj skrót w rogu, żeby go zmienić.</string>
@@ -341,6 +341,7 @@
     <string name="settings_welcome_tagline">Odzyskaj swój czas.\nSpędź go, dotykając trawy.</string>
     <string name="settings_welcome_intro">Bez ikon. Bez kolorów. Bez feedu.\nWskazówki na ekranie głównym pokażą ci, co i jak.</string>
     <string name="settings_welcome_swipe_right">Przesunięcie w prawo otwiera aplikację. Którą?</string>
+    <string name="settings_welcome_swipe_right_pages">Przesunięcie w prawo pokazuje: %1$s. Co robi każde przesunięcie, ustawisz w Gestach  →</string>
     <string name="settings_welcome_start">Zacznij</string>
     <string name="settings_welcome_setup_first">Najpierw skonfiguruj Focus</string>
 

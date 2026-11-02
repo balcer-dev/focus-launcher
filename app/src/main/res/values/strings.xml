@@ -59,8 +59,21 @@
     <string name="tip_hint">"%1$s  →  %2$s"</string>
     <string name="tip_swipe_left">Swipe left</string>
     <string name="tip_swipe_left_result">all apps</string>
-    <!-- The same gesture while the widgets page sits between the home screen and the app drawer. -->
+    <!-- Two swipes the same way, to the second page of a swipe's sequence. -->
     <string name="tip_swipe_left_twice">Swipe left twice</string>
+    <string name="tip_swipe_right_twice">Swipe right twice</string>
+    <!-- Three or more swipes the same way; %1$d is how many. -->
+    <plurals name="gesture_swipe_left_times">
+        <item quantity="one">Swipe left %1$d time</item>
+        <item quantity="other">Swipe left %1$d times</item>
+    </plurals>
+    <plurals name="gesture_swipe_right_times">
+        <item quantity="one">Swipe right %1$d time</item>
+        <item quantity="other">Swipe right %1$d times</item>
+    </plurals>
+    <!-- What a swipe tip promises when the swipe leads to one of these pages. -->
+    <string name="tip_result_widgets">widgets</string>
+    <string name="tip_result_quick">fast and pinned</string>
     <string name="tip_app_menu">Long-press an app</string>
     <string name="tip_app_menu_result">pin, timer, hide</string>
     <string name="tip_swipe_up">Swipe up</string>

@@ -13,12 +13,13 @@ import java.time.LocalDate
  * gone the moment the thing has been done once (or the line is tapped away), then the next.
  * A new gesture or hidden feature gets its line here.
  */
-enum class Tip(@StringRes val gestureRes: Int, @StringRes val resultRes: Int) {
+enum class Tip(@StringRes val gestureRes: Int, @StringRes val resultRes: Int, val swipe: Swipe? = null) {
     // Two or three words each side, so that a tip is one glance and fits one line on any phone.
-    SWIPE_LEFT(R.string.tip_swipe_left, R.string.tip_swipe_left_result),
+    // The three swipes that can be set: their words follow the gestures (see GestureLayout.tipFor).
+    SWIPE_LEFT(R.string.tip_swipe_left, R.string.tip_swipe_left_result, Swipe.LEFT),
     APP_MENU(R.string.tip_app_menu, R.string.tip_app_menu_result),
-    SWIPE_UP(R.string.tip_swipe_up, R.string.tip_swipe_up_result),
-    SWIPE_RIGHT(R.string.tip_swipe_right, R.string.tip_swipe_right_result),
+    SWIPE_UP(R.string.tip_swipe_up, R.string.tip_swipe_up_result, Swipe.UP),
+    SWIPE_RIGHT(R.string.tip_swipe_right, R.string.tip_swipe_right_result, Swipe.RIGHT),
     SWIPE_DOWN(R.string.tip_swipe_down, R.string.tip_swipe_down_result),
     CLOCK(R.string.tip_clock, R.string.tip_clock_result),
     SCREEN_TIME(R.string.tip_screen_time, R.string.tip_screen_time_result),

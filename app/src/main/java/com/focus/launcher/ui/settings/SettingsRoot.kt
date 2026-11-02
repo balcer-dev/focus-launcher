@@ -51,6 +51,7 @@ import com.focus.launcher.Graph
 import com.focus.launcher.R
 import com.focus.launcher.data.CalendarRepository
 import com.focus.launcher.data.LauncherPage
+import com.focus.launcher.data.Place
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.Swipe
 import com.focus.launcher.data.placeOf
@@ -60,6 +61,7 @@ import com.focus.launcher.ui.components.SettingRow
 import com.focus.launcher.ui.components.T
 import com.focus.launcher.ui.components.VSpace
 import com.focus.launcher.ui.pagePlace
+import com.focus.launcher.ui.swipePhrase
 import com.focus.launcher.ui.theme.LocalFocusColors
 import com.focus.launcher.util.Perms
 import java.io.ByteArrayOutputStream
@@ -185,8 +187,8 @@ fun SettingsRoot(settings: Settings, startRoute: String?, onExit: () -> Unit) {
             Routes.GESTURES -> GesturesPage(settings, apps, status, back, go)
             Routes.GESTURE_PAGES_RIGHT -> GesturePagesPage(Swipe.RIGHT, settings, apps, back)
             Routes.GESTURE_PAGES_LEFT -> GesturePagesPage(Swipe.LEFT, settings, apps, back)
-            Routes.ABOUT -> AboutPage(back, go)
-            Routes.WELCOME -> WelcomePage(settings) { toSetup ->
+            Routes.ABOUT -> AboutPage(settings, back, go)
+            Routes.WELCOME -> WelcomePage(settings, onOpenGestures = { go(Routes.GESTURES) }) { toSetup ->
                 Graph.state.tutorialSeen = true
                 Graph.state.restartTips() // also how "again" works, from About
                 stack.remove(Routes.WELCOME)
@@ -269,7 +271,7 @@ private fun MainPage(
 }
 
 @Composable
-private fun AboutPage(onBack: () -> Unit, go: (String) -> Unit) {
+private fun AboutPage(settings: Settings, onBack: () -> Unit, go: (String) -> Unit) {
     val c = LocalFocusColors.current
     Page(stringResource(R.string.settings_about), onBack) {
         SettingRow(stringResource(R.string.settings_about_welcome), subtitle = stringResource(R.string.settings_about_welcome_summary), onClick = { go(Routes.WELCOME) })
@@ -290,14 +292,16 @@ private fun AboutPage(onBack: () -> Unit, go: (String) -> Unit) {
             VSpace(20.dp)
             Label(stringResource(R.string.settings_about_tips))
             VSpace(8.dp)
+            // The first says where all apps really are; they are always somewhere (see GestureLayout.normalized).
+            val allApps = settings.gestures.placeOf(LauncherPage.ALL_APPS) ?: Place(Swipe.UP, 1)
             for (tip in listOf(
-                R.string.settings_about_tip_drawer,
-                R.string.settings_about_tip_app_menu,
-                R.string.settings_about_tip_settings,
-                R.string.settings_about_tip_corners,
-                R.string.settings_about_tip_clock,
+                stringResource(R.string.settings_about_tip_drawer_at, swipePhrase(allApps.swipe, allApps.position)),
+                stringResource(R.string.settings_about_tip_app_menu),
+                stringResource(R.string.settings_about_tip_settings),
+                stringResource(R.string.settings_about_tip_corners),
+                stringResource(R.string.settings_about_tip_clock),
             )) {
-                T("–  ${stringResource(tip)}", Modifier.padding(vertical = 4.dp), size = 15.sp, color = c.dim, lineHeight = 22.sp)
+                T("–  $tip", Modifier.padding(vertical = 4.dp), size = 15.sp, color = c.dim, lineHeight = 22.sp)
             }
         }
     }

@@ -215,13 +215,6 @@ data class Settings(
     val gestures: GestureLayout = GestureLayout.DEFAULT,
     val doubleTapLock: Boolean = true,
 ) {
-    // Read-only stand-ins for the four fields [gestures] replaced, for the screens not yet moved to
-    // the layout. They go once nothing reads them.
-    val showWidgetPage: Boolean get() = gestures.reaches(LauncherPage.WIDGETS)
-    val swipeUpSearch: Boolean get() = gestures.up == SwipeTarget.Pages(listOf(LauncherPage.ALL_APPS))
-    val swipeRightSearch: Boolean get() = gestures.right is SwipeTarget.WebSearch || gestures.right is SwipeTarget.App
-    val swipeRightApp: String get() = (gestures.right as? SwipeTarget.App)?.key ?: ""
-
     fun toJson(): JSONObject = JSONObject().apply {
         put("v", SCHEMA)
         put("dark", dark)

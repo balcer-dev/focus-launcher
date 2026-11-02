@@ -52,10 +52,8 @@
     <string name="home_tip_counter">TIP %1$d / %2$d</string>
     <string name="home_toast_double_tap_lock">Turn on the Focus timer service to lock with a double tap</string>
 
-    <!-- Fast apps: shown while none is pinned. Two lines. -->
-    <string name="home_favorites_empty">Swipe left for your apps.\nLong-press one to pin it here.</string>
-    <!-- The same while the widgets page sits between the home screen and the app drawer. -->
-    <string name="home_favorites_empty_widgets">Swipe left twice for your apps.\nLong-press one to pin it here.</string>
+    <!-- Fast apps: shown while none is pinned. Two lines. %1$s: the way to all apps, e.g. "Swipe left twice". -->
+    <string name="home_favorites_empty_at">%1$s for your apps.\nLong-press one to pin it here.</string>
 
     <!-- Calendar section. -->
     <string name="home_calendar_title">Calendar</string>

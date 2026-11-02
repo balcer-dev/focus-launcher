@@ -47,8 +47,6 @@ import com.focus.launcher.data.SHORTCUT_CAMERA
 import com.focus.launcher.data.SHORTCUT_PHONE
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.SplitSide
-import com.focus.launcher.data.Swipe
-import com.focus.launcher.data.SwipeTarget
 import com.focus.launcher.data.TimeFormat
 import com.focus.launcher.data.WallpaperStore
 import com.focus.launcher.data.placeOf
@@ -66,7 +64,6 @@ import com.focus.launcher.ui.launchApp
 import com.focus.launcher.ui.pagePlace
 import com.focus.launcher.ui.theme.LocalFocusColors
 import com.focus.launcher.ui.widgets.WidgetController
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -641,31 +638,5 @@ internal fun AppearancePage(settings: Settings, onBack: () -> Unit) {
             TEXT_SIZES.map { (scale, label) -> scale to stringResource(label) },
             settings.textScale, close,
         ) { v -> update { it.copy(textScale = v) } }
-    }
-}
-
-// ---- Swipe right on the welcome screen ---------------------------------------------------
-
-/** Which app swipe right opens: any app, or the web search. Shared by Settings → Gestures and the welcome screen. */
-@Composable
-internal fun SwipeRightRow(settings: Settings) {
-    val apps by Graph.apps.apps.collectAsStateWithLifecycle()
-    var picking by remember { mutableStateOf(false) }
-    val webSearch = stringResource(R.string.settings_web_search)
-    val current = apps.firstOrNull { it.key == settings.swipeRightApp }?.label ?: webSearch
-    SettingRow(
-        stringResource(R.string.settings_swipe_right_opens),
-        subtitle = stringResource(R.string.settings_swipe_right_opens_summary),
-        value = current,
-        onClick = { picking = true },
-    )
-    if (picking) {
-        AppPickerDialog(
-            title = stringResource(R.string.settings_swipe_right_opens),
-            apps = apps.filter { it.key !in settings.hidden },
-            onDismiss = { picking = false },
-            leading = listOf(webSearch to { update { it.copy(gestures = it.gestures.withTarget(Swipe.RIGHT, SwipeTarget.WebSearch)) } }),
-            onPick = { app -> update { it.copy(gestures = it.gestures.withTarget(Swipe.RIGHT, SwipeTarget.App(app.key))) } },
-        )
     }
 }

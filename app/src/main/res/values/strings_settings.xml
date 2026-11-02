@@ -64,7 +64,8 @@
     <string name="settings_about_privacy">Privacy</string>
     <string name="settings_about_privacy_text">Focus has no internet permission, so nothing it knows can leave this phone. Screen time is read from Android\'s own usage log and stored only in the app\'s private storage. The timer service sees the name of the app in front and nothing else; it cannot read what is on your screen.</string>
     <string name="settings_about_tips">Tips</string>
-    <string name="settings_about_tip_drawer">Swipe left on the home screen for all apps.</string>
+    <!-- %1$s: the way to all apps, e.g. "Swipe left". -->
+    <string name="settings_about_tip_drawer_at">%1$s on the home screen for all apps.</string>
     <string name="settings_about_tip_app_menu">Long-press any app for its menu: timer, rename, hide, fast apps.</string>
     <string name="settings_about_tip_settings">Long-press empty space on the home screen to open these settings.</string>
     <string name="settings_about_tip_corners">Long-press a corner shortcut to change it.</string>
@@ -388,6 +389,8 @@
     <string name="settings_welcome_intro">No icons. No colour. No feed.\nTips on the home screen show you around.</string>
     <!-- Above the row that picks the app a swipe right opens. -->
     <string name="settings_welcome_swipe_right">Swipe right opens. Which app?</string>
+    <!-- Instead of that question while swipe right leads to pages; %1$s lists them. A tap opens Gestures. -->
+    <string name="settings_welcome_swipe_right_pages">Swipe right shows %1$s. What each swipe does is set in Gestures  →</string>
     <string name="settings_welcome_start">Start</string>
     <string name="settings_welcome_setup_first">Set up Focus first</string>
 

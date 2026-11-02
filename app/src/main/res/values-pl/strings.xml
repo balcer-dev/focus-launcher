@@ -39,6 +39,21 @@
     <string name="tip_swipe_left">Przesuń w lewo</string>
     <string name="tip_swipe_left_result">wszystkie aplikacje</string>
     <string name="tip_swipe_left_twice">Przesuń dwa razy w lewo</string>
+    <string name="tip_swipe_right_twice">Przesuń dwa razy w prawo</string>
+    <plurals name="gesture_swipe_left_times">
+        <item quantity="one">Przesuń %1$d raz w lewo</item>
+        <item quantity="few">Przesuń %1$d razy w lewo</item>
+        <item quantity="many">Przesuń %1$d razy w lewo</item>
+        <item quantity="other">Przesuń %1$d razy w lewo</item>
+    </plurals>
+    <plurals name="gesture_swipe_right_times">
+        <item quantity="one">Przesuń %1$d raz w prawo</item>
+        <item quantity="few">Przesuń %1$d razy w prawo</item>
+        <item quantity="many">Przesuń %1$d razy w prawo</item>
+        <item quantity="other">Przesuń %1$d razy w prawo</item>
+    </plurals>
+    <string name="tip_result_widgets">widżety</string>
+    <string name="tip_result_quick">szybkie i przypięte</string>
     <string name="tip_app_menu">Przytrzymaj aplikację</string>
     <string name="tip_app_menu_result">przypnij, minutnik, ukryj</string>
     <string name="tip_swipe_up">Przesuń w górę</string>

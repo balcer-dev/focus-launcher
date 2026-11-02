@@ -107,6 +107,27 @@ class GestureLayoutTest {
         assertEquals(Place(Swipe.UP, 1), EXAMPLE_1.placeOf(ALL_APPS))
     }
 
+    @Test fun `a tip promises what the swipe really leads to`() {
+        val widgets = GestureLayout.fromLegacy(true, "", true, true)
+        assertEquals(SwipeTip(1, pages(ALL_APPS)), GestureLayout.DEFAULT.tipFor(LEFT))
+        assertEquals(SwipeTip(2, pages(ALL_APPS)), widgets.tipFor(LEFT))
+        assertEquals(SwipeTip(1, WebSearch), GestureLayout.DEFAULT.tipFor(RIGHT))
+        assertEquals(SwipeTip(1, pages(ALL_APPS)), GestureLayout.DEFAULT.tipFor(Swipe.UP))
+        assertEquals(SwipeTip(1, pages(ALL_APPS)), EXAMPLE_2.tipFor(RIGHT))
+        assertEquals(null, EXAMPLE_2.tipFor(LEFT))
+        assertEquals(SwipeTip(1, pages(WIDGETS)), EXAMPLE_1.tipFor(RIGHT))
+        assertEquals(SwipeTip(1, App(SETTINGS_APP)), EXAMPLE_1.tipFor(LEFT))
+        assertEquals(SwipeTip(1, pages(QUICK)), GestureLayout(pages(QUICK, WIDGETS, ALL_APPS), None, None).tipFor(RIGHT))
+    }
+
+    @Test fun `each swipe tip names its swipe`() {
+        assertEquals(LEFT, Tip.SWIPE_LEFT.swipe)
+        assertEquals(RIGHT, Tip.SWIPE_RIGHT.swipe)
+        assertEquals(Swipe.UP, Tip.SWIPE_UP.swipe)
+        assertEquals(null, Tip.APP_MENU.swipe)
+        assertEquals(null, Tip.SWIPE_DOWN.swipe)
+    }
+
     @Test fun `both examples survive a round trip`() {
         for (layout in listOf(EXAMPLE_1, EXAMPLE_2)) {
             assertEquals(layout, Settings.fromJson(Settings(gestures = layout).toJson()).gestures)

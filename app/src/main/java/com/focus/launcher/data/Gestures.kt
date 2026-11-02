@@ -53,6 +53,24 @@ fun GestureLayout.placeOf(page: LauncherPage): Place? {
     return null
 }
 
+/** What a tip about a swipe promises: [goal] (an action, or one page) after [times] swipes that way. */
+data class SwipeTip(val times: Int, val goal: SwipeTarget)
+
+/**
+ * What the tip about [swipe] should promise, or null when nothing is under it and the tip is passed
+ * over. A sequence that holds all apps one or two swipes away promises them, as the tip always did
+ * (twice with the widgets page in between); any other sequence promises its first page.
+ */
+fun GestureLayout.tipFor(swipe: Swipe): SwipeTip? = when (val target = this[swipe]) {
+    SwipeTarget.None -> null
+    is SwipeTarget.Pages -> {
+        val allApps = target.pages.indexOf(LauncherPage.ALL_APPS)
+        if (swipe != Swipe.UP && allApps in 0..1) SwipeTip(allApps + 1, SwipeTarget.Pages(listOf(LauncherPage.ALL_APPS)))
+        else target.pages.firstOrNull()?.let { SwipeTip(1, SwipeTarget.Pages(listOf(it))) }
+    }
+    else -> SwipeTip(1, target)
+}
+
 /**
  * What each swipe on the home screen does: [right], [left] and [up]. Every layout that is stored or
  * shown goes through [normalized], so the rules hold however it was made, in Settings, on the

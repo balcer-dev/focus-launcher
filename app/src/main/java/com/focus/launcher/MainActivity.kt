@@ -48,6 +48,7 @@ import com.focus.launcher.data.LauncherPage
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.Swipe
 import com.focus.launcher.data.SwipeTarget
+import com.focus.launcher.data.tipFor
 import com.focus.launcher.service.WeeklyReview
 import com.focus.launcher.ui.drawer.AppMenu
 import com.focus.launcher.ui.drawer.DrawerMode
@@ -165,6 +166,11 @@ internal data class PagerLayout(val gestures: GestureLayout) {
 
 private var lastBackfill = 0L
 
+/** The user just swiped that way to where its tip leads: the tip about it is learnt. */
+private fun didSwipe(swipe: Swipe) {
+    Tip.entries.firstOrNull { it.swipe == swipe }?.let(Graph.state::did)
+}
+
 @Composable
 private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<WidgetController>) {
     val context = LocalContext.current
@@ -247,9 +253,15 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
         }
     }
 
-    // Arrived in the app list, by whichever way: that tip is learnt. The widgets page, which a swipe
-    // left reaches first while it is on, does not count: the tip promises all apps.
-    LaunchedEffect(pager.settledPage, layout) { if (pager.settledPage == layout.drawerPage) Graph.state.did(Tip.SWIPE_LEFT) }
+    // Arrived at the page a swipe's tip promises, by whichever way through the pager: that tip is
+    // learnt. A page on the way does not count (the widgets page before all apps): the tip promises
+    // the page it names.
+    LaunchedEffect(pager.settledPage, layout) {
+        val settled = pager.settledPage
+        val page = layout.pages.getOrNull(settled) ?: return@LaunchedEffect
+        val side = if (settled < layout.homePage) Swipe.RIGHT else Swipe.LEFT
+        if (layout.gestures.tipFor(side)?.goal == SwipeTarget.Pages(listOf(page))) didSwipe(side)
+    }
 
     LaunchedEffect(Unit) {
         homePresses.collect {
@@ -370,11 +382,12 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
                         val sideways = abs(moved.x) > abs(moved.y) * 2
                         if (sideways && moved.x > threshold && toRight != null) {
                             runAction(toRight)
-                            Graph.state.did(Tip.SWIPE_RIGHT)
+                            didSwipe(Swipe.RIGHT)
                             break
                         }
                         if (sideways && -moved.x > threshold && toLeft != null) {
                             runAction(toLeft)
+                            didSwipe(Swipe.LEFT)
                             break
                         }
                     }
