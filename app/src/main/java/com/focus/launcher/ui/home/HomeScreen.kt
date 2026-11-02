@@ -87,6 +87,7 @@ import com.focus.launcher.data.SHORTCUT_CAMERA
 import com.focus.launcher.data.SHORTCUT_PHONE
 import com.focus.launcher.data.Settings
 import com.focus.launcher.data.SplitSide
+import com.focus.launcher.data.SwipeTarget
 import com.focus.launcher.data.TAP_ALARMS
 import com.focus.launcher.data.TAP_BATTERY
 import com.focus.launcher.data.TAP_CALENDAR
@@ -115,8 +116,8 @@ import java.time.LocalDate
  * the optional calendar section, up to five fast apps, and the two corner shortcuts. Text only.
  *
  * Gestures on empty space: long-press opens settings, swipe down pulls the notification shade,
- * swipe up jumps to search, double-tap locks the phone. Swiping left (handled by the pager that
- * hosts this page) opens the app drawer, or first the widgets page while that is on.
+ * swipe up does what the gestures set ([onSwipeUp]; by default the app drawer with its search),
+ * double-tap locks the phone. Swiping sideways is for the pager that hosts this page.
  */
 @Composable
 fun HomeScreen(
@@ -130,6 +131,8 @@ fun HomeScreen(
     onLaunch: (AppEntry) -> Unit,
     onAppMenu: (AppEntry) -> Unit,
     onOpenDrawer: (focusSearch: Boolean) -> Unit,
+    /** Swipe up on empty space, while the gestures have something under it. */
+    onSwipeUp: () -> Unit,
     onOpenSettings: (route: String?) -> Unit,
     onOpenReview: (week: LocalDate?) -> Unit,
 ) {
@@ -141,7 +144,7 @@ fun HomeScreen(
     val todoFullHint = stringResource(R.string.home_todo_full)
     val now by rememberNow()
     // The gesture detectors below outlive recompositions, so they must call the latest callbacks.
-    val openDrawer by rememberUpdatedState(onOpenDrawer)
+    val swipeUp by rememberUpdatedState(onSwipeUp)
     val openSettings by rememberUpdatedState(onOpenSettings)
 
     // Calendar section data
@@ -229,7 +232,7 @@ fun HomeScreen(
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
-            .pointerInput(settings.swipeDownNotifications, settings.swipeUpSearch) {
+            .pointerInput(settings.swipeDownNotifications, settings.gestures.up) {
                 val threshold = 64.dp.toPx()
                 var dragged = 0f
                 var fired = false
@@ -241,9 +244,9 @@ fun HomeScreen(
                             fired = true
                             expandNotifications(context)
                             Graph.state.did(Tip.SWIPE_DOWN)
-                        } else if (!fired && dragged < -threshold && settings.swipeUpSearch) {
+                        } else if (!fired && dragged < -threshold && settings.gestures.up != SwipeTarget.None) {
                             fired = true
-                            openDrawer(true)
+                            swipeUp()
                             Graph.state.did(Tip.SWIPE_UP)
                         }
                     },
