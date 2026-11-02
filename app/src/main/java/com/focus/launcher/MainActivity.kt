@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +57,7 @@ import com.focus.launcher.ui.drawer.DrawerScreen
 import com.focus.launcher.ui.home.HomeScreen
 import com.focus.launcher.ui.launchApp
 import com.focus.launcher.ui.PullDownToClose
+import com.focus.launcher.ui.SlideUpState
 import com.focus.launcher.ui.openWebSearch
 import com.focus.launcher.ui.theme.FocusTheme
 import com.focus.launcher.ui.theme.LocalFocusColors
@@ -195,7 +197,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     val pagerDragged by pager.interactionSource.collectIsDraggedAsState()
     val activePage by remember { derivedStateOf { if (pagerDragged) pager.settledPage else pager.targetPage } }
     // The page under swipe up, when it stands in no sequence, slides up over the home screen.
-    var sheetOpen by remember { mutableStateOf(false) }
+    val slideUp = remember { SlideUpState() }
     var query by remember { mutableStateOf("") }
     var menuApp by remember { mutableStateOf<AppEntry?>(null) }
     var wantsSearchFocus by remember { mutableStateOf(false) }
@@ -232,7 +234,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     LifecycleStartEffect(Unit) {
         onStopOrDispose {
             if (!(widgets.isInitialized() && widgets.value.awaitingResult)) {
-                sheetOpen = false
+                slideUp.closeAtOnce()
                 query = ""
                 menuApp = null
                 wantsSearchFocus = false
@@ -248,7 +250,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     LaunchedEffect(layout) {
         if (layout != shownLayout) {
             shownLayout = layout
-            sheetOpen = false
+            slideUp.closeAtOnce()
             pager.scrollToPage(layout.homePage)
         }
     }
@@ -265,7 +267,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
 
     LaunchedEffect(Unit) {
         homePresses.collect {
-            sheetOpen = false
+            slideUp.close()
             menuApp = null
             query = ""
             if (pager.currentPage != current.homePage) pager.animateScrollToPage(current.homePage)
@@ -274,7 +276,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
 
     // A launcher is never "backed out of": back closes the page slid up, else returns to the home screen.
     BackHandler {
-        if (sheetOpen) sheetOpen = false
+        if (slideUp.isOpen) slideUp.close()
         else if (pager.currentPage != current.homePage) scope.launch { pager.animateScrollToPage(current.homePage) }
     }
 
@@ -296,7 +298,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
             scope.launch { pager.animateScrollToPage(index) }
         } else if (page == current.sheet) {
             wantsSearchFocus = focusSearch && page == LauncherPage.ALL_APPS
-            sheetOpen = true
+            slideUp.open()
         }
     }
     val swipeUp: () -> Unit = {
@@ -360,7 +362,7 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
     }
 
     val pullThreshold = with(LocalDensity.current) { 64.dp.toPx() }
-    val closeOnPull = remember(pullThreshold) { PullDownToClose(pullThreshold) { sheetOpen = false } }
+    val closeOnPull = remember(pullThreshold) { PullDownToClose(pullThreshold) { slideUp.close() } }
     Box(Modifier.fillMaxSize()) {
         HorizontalPager(
             state = pager,
@@ -422,21 +424,38 @@ private fun Launcher(settings: Settings, homePresses: Flow<Unit>, widgets: Lazy<
         }
 
         layout.sheet?.let { page ->
-            AnimatedVisibility(
-                visible = sheetOpen,
-                enter = slideInVertically { it } + fadeIn(),
-                exit = slideOutVertically { it } + fadeOut(),
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(LocalFocusColors.current.bg)
-                        // Takes every touch, whether or not something on the page wants it: the pager
-                        // underneath would otherwise swipe from the page's empty places.
-                        .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false) } }
-                        .nestedScroll(closeOnPull),
+            // Afresh after a close out of sight: a new AnimatedVisibility that starts hidden shows nothing.
+            key(slideUp.generation) {
+                AnimatedVisibility(
+                    visible = slideUp.isOpen,
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut(),
                 ) {
-                    pageContent(page, sheetOpen)
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(LocalFocusColors.current.bg)
+                            // Takes every touch, whether or not something on the page wants it: the
+                            // pager underneath would otherwise swipe from the page's empty places.
+                            // While it slides away the touches stop here, before the page's rows
+                            // see them: it is mostly see-through by then, and a tap meant for the
+                            // home screen must not open an app on it.
+                            .pointerInput(slideUp.takesTaps) {
+                                val takesTaps = slideUp.takesTaps
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                                    if (takesTaps) return@awaitEachGesture
+                                    down.consume()
+                                    do {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        event.changes.forEach { it.consume() }
+                                    } while (event.changes.any { it.pressed })
+                                }
+                            }
+                            .nestedScroll(closeOnPull),
+                    ) {
+                        pageContent(page, slideUp.isOpen)
+                    }
                 }
             }
         }

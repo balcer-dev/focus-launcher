@@ -1,9 +1,45 @@
 package com.focus.launcher.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
+
+/**
+ * Whether the page under swipe up is slid up, and how it was last closed. In sight (back, Home,
+ * a pull) it slides away. Out of sight (the launcher left) it is gone at once: Compose holds back
+ * frames while the launcher is stopped, so a sliding close would play only on the way back, over
+ * the home screen. [generation] changes then, and the page is started afresh, already closed.
+ */
+internal class SlideUpState {
+    var isOpen by mutableStateOf(false)
+        private set
+
+    /** Changes on every close that must not be seen: key the page on it. */
+    var generation by mutableIntStateOf(0)
+        private set
+
+    /** While it slides away it is still drawn, mostly see-through: a tap meant for the home screen must not open an app on it. */
+    val takesTaps: Boolean get() = isOpen
+
+    fun open() {
+        isOpen = true
+    }
+
+    fun close() {
+        isOpen = false
+    }
+
+    fun closeAtOnce() {
+        if (!isOpen) return
+        isOpen = false
+        generation++
+    }
+}
 
 /**
  * Sums how far a finger pulls down past the top of a list, and says when that has reached
