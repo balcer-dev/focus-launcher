@@ -206,9 +206,16 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             value = "$favoriteCount / $MAX_FAVORITES",
             onClick = { go(Routes.FAST_APPS) },
         )
+        ToggleRow(
+            stringResource(R.string.settings_fast_apps_on_home), settings.showFavoritesOnHome,
+            subtitle = stringResource(R.string.settings_fast_apps_on_home_summary),
+        ) { v -> update { it.copy(showFavoritesOnHome = v) } }
+        // How they look matters only where they are shown; the alignment is the whole page's.
+        val onHome = settings.showFavoritesOnHome
         SettingRow(
             stringResource(R.string.settings_favorite_style),
             value = stringResource(settings.favoriteStyle.labelRes),
+            enabled = onHome,
             onClick = { dialog = HomeDialog.FAVORITE_STYLE },
         )
         // Only an icon has a colour to choose.
@@ -216,11 +223,13 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             ToggleRow(
                 stringResource(R.string.settings_colour_icons), settings.colourFavoriteIcons,
                 subtitle = stringResource(R.string.settings_colour_icons_summary),
+                enabled = onHome,
             ) { v -> update { it.copy(colourFavoriteIcons = v) } }
         }
         SettingRow(
             stringResource(R.string.settings_favorite_size),
             value = stringResource(settings.favoriteSize.labelRes),
+            enabled = onHome,
             onClick = { dialog = HomeDialog.FAVORITE_SIZE },
         )
         SettingRow(stringResource(R.string.settings_alignment), value = stringResource(settings.homeAlign.labelRes), onClick = { dialog = HomeDialog.ALIGN })

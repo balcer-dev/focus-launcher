@@ -151,6 +151,8 @@
     <string name="settings_todo">To-do list</string>
     <string name="settings_todo_summary">A short checklist on the home screen. Tap a task to check it; checked tasks disappear after seven days.</string>
     <string name="settings_fast_apps">Fast apps</string>
+    <string name="settings_fast_apps_on_home">Show on the home screen</string>
+    <string name="settings_fast_apps_on_home_summary">Turned off, they can still be shown at the top of the app list.</string>
     <!-- %1$d is the most fast apps the home screen holds (MAX_FAVORITES). -->
     <plurals name="settings_fast_apps_summary">
         <item quantity="one">Up to %1$d app, one tap from the home screen.</item>

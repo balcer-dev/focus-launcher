@@ -275,7 +275,8 @@ fun HomeScreen(
         val textScale = LocalDensity.current.fontScale * settings.textScale
         val notices = (if (setupIncomplete) 1 else 0) + (if (pendingReview != null) 1 else 0) + (if (tip != null) 3 else 0) // a framed tip is about three notice lines tall
         val favoriteColumns = if (favorites.size > FAVORITES_PER_COLUMN) 2 else 1
-        val rowCount = ((favorites.size + favoriteColumns - 1) / favoriteColumns).coerceAtLeast(2) // the empty-state hint is two lines tall
+        // None when the fast apps are off the home screen; the empty-state hint is two lines tall.
+        val rowCount = if (!settings.showFavoritesOnHome) 0 else ((favorites.size + favoriteColumns - 1) / favoriteColumns).coerceAtLeast(2)
         val eventCount = events.size
         val preferredRing = (maxHeight * if (settings.showCalendar) 0.25f else 0.29f).coerceIn(140.dp, 236.dp)
 
@@ -490,7 +491,9 @@ fun HomeScreen(
             Spacer(Modifier.weight(if (anySection) 0.9f else 0.6f))
 
             // Fast apps
-            if (favorites.isEmpty()) {
+            if (!settings.showFavoritesOnHome) {
+                // Turned off on purpose, so not even the hint to add some: they may live in the app list only.
+            } else if (favorites.isEmpty()) {
                 T(
                     stringResource(if (settings.showWidgetPage) R.string.home_favorites_empty_widgets else R.string.home_favorites_empty),
                     Modifier.fillMaxWidth().clickable { onOpenDrawer(false) }.padding(horizontal = 12.dp, vertical = 8.dp),

@@ -126,6 +126,12 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `fast apps stay on the home screen unless taken off it`() {
+        assertEquals(true, Settings.fromJson(Settings().toJson().apply { remove("showFavoritesOnHome") }).showFavoritesOnHome)
+        val s = Settings(showFavoritesOnHome = false)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `search forgives typos only once asked to`() {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)
