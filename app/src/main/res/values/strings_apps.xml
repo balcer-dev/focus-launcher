@@ -17,6 +17,10 @@
     <!-- Section titles in the list, shown in small capitals. -->
     <string name="drawer_pinned">Pinned</string>
     <string name="drawer_fast_apps">Fast apps</string>
+    <string name="drawer_reorder">Reorder</string>
+    <string name="drawer_reorder_done">Done</string>
+    <string name="drawer_move_up">Move up</string>
+    <string name="drawer_move_down">Move down</string>
     <string name="drawer_recent_installs">Installed in the last 24 hours</string>
     <string name="drawer_all_apps">All apps</string>
     <string name="drawer_loading">Loading…</string>

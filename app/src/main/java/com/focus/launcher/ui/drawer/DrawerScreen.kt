@@ -33,8 +33,10 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -62,6 +64,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focus.launcher.Graph
@@ -71,6 +76,7 @@ import com.focus.launcher.data.DayUsage
 import com.focus.launcher.data.DrawerLayout
 import com.focus.launcher.data.DrawerSort
 import com.focus.launcher.data.Settings
+import com.focus.launcher.data.movedAmong
 import com.focus.launcher.ui.components.AppIcon
 import com.focus.launcher.ui.components.ChoiceDialog
 import com.focus.launcher.ui.components.Label
@@ -243,8 +249,35 @@ fun DrawerScreen(
     }
     // stats is a key too: when it arrives the list reorders, and a keyed list would follow the old top row.
     // So are the pins: a new one lands at the very top, which a keyed list would otherwise scroll past.
+    // As a set: putting them in a new order moves nothing out of sight, so the list stays where it is.
     // And the layout: the list and the grid each keep their own position.
-    LaunchedEffect(query, workTab, sort, stats, settings.pinned, grid) { scrollTo(0) }
+    LaunchedEffect(query, workTab, sort, stats, settings.pinned.toSet(), grid) { scrollTo(0) }
+
+    // The section whose order is being changed with arrows, if any. Ends with a search or on leaving the page.
+    var reordering by remember { mutableStateOf<Reorder?>(null) }
+    LaunchedEffect(isActive, searching) { if (!isActive || searching) reordering = null }
+    // Moves an app one place among those of its section on screen; see movedAmong for the rest.
+    val move: (Reorder, String, Int) -> Unit = { section, key, delta ->
+        when (section) {
+            Reorder.FAVORITES -> {
+                val shown = favoriteApps.map { it.key }
+                Graph.settings.update { s -> s.copy(favorites = s.favorites.movedAmong(shown, key, delta)) }
+            }
+            Reorder.PINNED -> {
+                val shown = pinnedApps.map { it.key }
+                Graph.settings.update { s -> s.copy(pinned = s.pinned.movedAmong(shown, key, delta)) }
+            }
+        }
+    }
+    // The "Reorder" / "Done" switch next to a section's label, for a section with something to reorder.
+    val reorderLabel = stringResource(R.string.drawer_reorder)
+    val reorderDoneLabel = stringResource(R.string.drawer_reorder_done)
+    fun reorderAction(section: Reorder, size: Int): String? = when {
+        size < 2 -> null
+        reordering == section -> reorderDoneLabel
+        else -> reorderLabel
+    }
+    val toggleReorder: (Reorder) -> Unit = { section -> reordering = if (reordering == section) null else section }
     // Optional: open the app as soon as the search narrows down to exactly one. Names only a typo
     // away are not counted: they would keep "map" from opening Maps whenever Mail is one edit off,
     // and opening an app on a guess at what was meant cannot be taken back.
@@ -322,19 +355,43 @@ fun DrawerScreen(
             val showIndex = !searching && sort == DrawerSort.ALPHA && letters.size > 5 && maxHeight > (letters.size * 15).dp
 
             if (grid) {
-                AppGrid(gridState, settings, today, favoriteApps, pinnedApps, recent, results, allAppsLabel, searching, emptyText, showIndex, onLaunch, onAppMenu)
+                AppGrid(
+                    gridState, settings, today, favoriteApps, pinnedApps, recent, results, allAppsLabel, searching, emptyText, showIndex,
+                    reordering, ::reorderAction, toggleReorder, move, onLaunch, onAppMenu,
+                )
             } else {
+                // Clear of the A–Z index on the right edge, like the rows; the arrows bring 12dp of their own.
+                val labelEnd = if (showIndex) 42 else 30
+                val arrowsEnd = (labelEnd - 12).dp
                 LazyColumn(Modifier.fillMaxSize(), state = listState) {
                     if (!searching && favoriteApps.isNotEmpty()) {
-                        item(key = "label:favorites") { SectionLabel(stringResource(R.string.drawer_fast_apps)) }
-                        items(favoriteApps, key = { "favorite:" + it.key }) { app ->
-                            AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                        item(key = "label:favorites") {
+                            SectionLabel(
+                                stringResource(R.string.drawer_fast_apps), end = labelEnd,
+                                action = reorderAction(Reorder.FAVORITES, favoriteApps.size),
+                            ) { toggleReorder(Reorder.FAVORITES) }
+                        }
+                        itemsIndexed(favoriteApps, key = { _, app -> "favorite:" + app.key }) { i, app ->
+                            if (reordering == Reorder.FAVORITES) {
+                                ReorderRow(app, i, favoriteApps.lastIndex, 30.dp, arrowsEnd) { d -> move(Reorder.FAVORITES, app.key, d) }
+                            } else {
+                                AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                            }
                         }
                     }
                     if (!searching && pinnedApps.isNotEmpty()) {
-                        item(key = "label:pinned") { SectionLabel(stringResource(R.string.drawer_pinned), top = if (favoriteApps.isNotEmpty()) 22 else 10) }
-                        items(pinnedApps, key = { "pinned:" + it.key }) { app ->
-                            AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                        item(key = "label:pinned") {
+                            SectionLabel(
+                                stringResource(R.string.drawer_pinned), top = if (favoriteApps.isNotEmpty()) 22 else 10, end = labelEnd,
+                                action = reorderAction(Reorder.PINNED, pinnedApps.size),
+                            ) { toggleReorder(Reorder.PINNED) }
+                        }
+                        itemsIndexed(pinnedApps, key = { _, app -> "pinned:" + app.key }) { i, app ->
+                            if (reordering == Reorder.PINNED) {
+                                ReorderRow(app, i, pinnedApps.lastIndex, 30.dp, arrowsEnd) { d -> move(Reorder.PINNED, app.key, d) }
+                            } else {
+                                AppRow(app, settings, today, showIndex, onLaunch, onAppMenu)
+                            }
                         }
                     }
                     if (!searching && recent.isNotEmpty()) {
@@ -432,9 +489,59 @@ fun DrawerScreen(
     }
 }
 
+/** Sections of the list whose order can be changed right there, with arrows. */
+private enum class Reorder { FAVORITES, PINNED }
+
+/** A section's label, with [action] (a small word to tap) at the other end when there is one. */
 @Composable
-private fun SectionLabel(text: String, top: Int = 10, start: Int = 30) {
-    Label(text, Modifier.padding(start = start.dp, end = 30.dp, top = top.dp, bottom = 6.dp))
+private fun SectionLabel(
+    text: String,
+    top: Int = 10,
+    start: Int = 30,
+    end: Int = 30,
+    action: String? = null,
+    onAction: () -> Unit = {},
+) {
+    if (action == null) {
+        Label(text, Modifier.padding(start = start.dp, end = end.dp, top = top.dp, bottom = 6.dp))
+        return
+    }
+    Row(Modifier.fillMaxWidth().padding(start = start.dp, top = top.dp), verticalAlignment = Alignment.CenterVertically) {
+        Label(text, Modifier.weight(1f).padding(bottom = 6.dp))
+        // Padded all round so the small word is an easy target; the end padding keeps the list's edge.
+        T(
+            action,
+            Modifier.press(onClick = onAction).padding(start = 12.dp, end = end.dp, top = 6.dp, bottom = 12.dp),
+            size = 13.sp, color = LocalFocusColors.current.fg, maxLines = 1,
+        )
+    }
+}
+
+/**
+ * An app of a section being put in order: its name, and arrows that move it a place up or down.
+ * A tap on the name does nothing here, so nothing opens by mistake while arranging.
+ */
+@Composable
+private fun ReorderRow(app: AppEntry, position: Int, last: Int, start: Dp, end: Dp, onMove: (Int) -> Unit) {
+    val c = LocalFocusColors.current
+    val up = stringResource(R.string.drawer_move_up)
+    val down = stringResource(R.string.drawer_move_down)
+    Row(Modifier.fillMaxWidth().padding(start = start, end = end), verticalAlignment = Alignment.CenterVertically) {
+        val name = if (hasColourGlyphs(app.label)) Modifier.weight(1f).monochrome() else Modifier.weight(1f)
+        T(app.label, name, size = 20.sp, color = c.fg, maxLines = 1)
+        val canUp = position > 0
+        val canDown = position < last
+        T(
+            "↑",
+            Modifier.semantics { contentDescription = up }.clickable(enabled = canUp) { onMove(-1) }.padding(12.dp),
+            size = 20.sp, color = if (canUp) c.fg else c.line, maxLines = 1,
+        )
+        T(
+            "↓",
+            Modifier.semantics { contentDescription = down }.clickable(enabled = canDown) { onMove(1) }.padding(12.dp),
+            size = 20.sp, color = if (canDown) c.fg else c.line, maxLines = 1,
+        )
+    }
 }
 
 @Composable
@@ -490,10 +597,16 @@ private fun AppGrid(
     searching: Boolean,
     emptyText: String?,
     indexShown: Boolean,
+    reordering: Reorder?,
+    reorderAction: (Reorder, Int) -> String?,
+    onToggleReorder: (Reorder) -> Unit,
+    onMove: (Reorder, String, Int) -> Unit,
     onLaunch: (AppEntry) -> Unit,
     onAppMenu: (AppEntry) -> Unit,
 ) {
     val c = LocalFocusColors.current
+    // A section being put in order takes a whole row per app, the arrows next to the name.
+    fun span(section: Reorder) = if (reordering == section) GRID_COLUMNS else 1
     LazyVerticalGrid(
         columns = GridCells.Fixed(GRID_COLUMNS),
         modifier = Modifier.fillMaxSize(),
@@ -503,17 +616,33 @@ private fun AppGrid(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (!searching && favoriteApps.isNotEmpty()) {
-            item(key = "label:favorites", span = { GridItemSpan(maxLineSpan) }) { SectionLabel(stringResource(R.string.drawer_fast_apps), start = 12) }
-            items(favoriteApps, key = { "favorite:" + it.key }) { app ->
-                AppTile(app, settings, today, onLaunch, onAppMenu)
+            item(key = "label:favorites", span = { GridItemSpan(maxLineSpan) }) {
+                SectionLabel(
+                    stringResource(R.string.drawer_fast_apps), start = 12, end = 12,
+                    action = reorderAction(Reorder.FAVORITES, favoriteApps.size),
+                ) { onToggleReorder(Reorder.FAVORITES) }
+            }
+            itemsIndexed(favoriteApps, key = { _, app -> "favorite:" + app.key }, span = { _, _ -> GridItemSpan(span(Reorder.FAVORITES)) }) { i, app ->
+                if (reordering == Reorder.FAVORITES) {
+                    ReorderRow(app, i, favoriteApps.lastIndex, 12.dp, 0.dp) { d -> onMove(Reorder.FAVORITES, app.key, d) }
+                } else {
+                    AppTile(app, settings, today, onLaunch, onAppMenu)
+                }
             }
         }
         if (!searching && pinnedApps.isNotEmpty()) {
             item(key = "label:pinned", span = { GridItemSpan(maxLineSpan) }) {
-                SectionLabel(stringResource(R.string.drawer_pinned), top = if (favoriteApps.isNotEmpty()) 22 else 10, start = 12)
+                SectionLabel(
+                    stringResource(R.string.drawer_pinned), top = if (favoriteApps.isNotEmpty()) 22 else 10, start = 12, end = 12,
+                    action = reorderAction(Reorder.PINNED, pinnedApps.size),
+                ) { onToggleReorder(Reorder.PINNED) }
             }
-            items(pinnedApps, key = { "pinned:" + it.key }) { app ->
-                AppTile(app, settings, today, onLaunch, onAppMenu)
+            itemsIndexed(pinnedApps, key = { _, app -> "pinned:" + app.key }, span = { _, _ -> GridItemSpan(span(Reorder.PINNED)) }) { i, app ->
+                if (reordering == Reorder.PINNED) {
+                    ReorderRow(app, i, pinnedApps.lastIndex, 12.dp, 0.dp) { d -> onMove(Reorder.PINNED, app.key, d) }
+                } else {
+                    AppTile(app, settings, today, onLaunch, onAppMenu)
+                }
             }
         }
         if (!searching && recent.isNotEmpty()) {

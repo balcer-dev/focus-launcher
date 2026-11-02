@@ -9,6 +9,10 @@
     <string name="drawer_sort_title">Sortuj aplikacje</string>
     <string name="drawer_pinned">Przypięte</string>
     <string name="drawer_fast_apps">Szybkie aplikacje</string>
+    <string name="drawer_reorder">Zmień kolejność</string>
+    <string name="drawer_reorder_done">Gotowe</string>
+    <string name="drawer_move_up">Wyżej</string>
+    <string name="drawer_move_down">Niżej</string>
     <string name="drawer_recent_installs">Zainstalowane w ciągu doby</string>
     <string name="drawer_all_apps">Wszystkie aplikacje</string>
     <string name="drawer_loading">Wczytywanie…</string>
