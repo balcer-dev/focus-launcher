@@ -39,7 +39,7 @@ enum class DrawerSort(@StringRes val labelRes: Int) {
     ALPHA(R.string.sort_alpha), MOST_USED(R.string.sort_most_used), RECENT(R.string.sort_recent),
 }
 
-/** How the drawer shows the apps. GRID is the only place the launcher loads app icons. */
+/** How the drawer shows the apps. GRID loads app icons; the text list never does. */
 enum class DrawerLayout(@StringRes val labelRes: Int) {
     LIST(R.string.layout_list), GRID(R.string.layout_grid),
 }
@@ -53,6 +53,11 @@ enum class FavoriteSize(@StringRes val labelRes: Int, val scale: Float) {
     SMALL(R.string.favorite_size_small, 0.75f),
     MEDIUM(R.string.favorite_size_medium, 0.875f),
     LARGE(R.string.favorite_size_large, 1f),
+}
+
+/** What each fast app on the home screen shows. An icon is as tall as a line of the name. */
+enum class FavoriteStyle(@StringRes val labelRes: Int) {
+    NAME(R.string.favorite_style_name), ICON(R.string.favorite_style_icon), BOTH(R.string.favorite_style_both),
 }
 
 const val MAX_FAVORITES = 10
@@ -137,6 +142,9 @@ data class Settings(
     val homeAlign: HomeAlign = HomeAlign.CENTER,
     val favorites: List<String> = emptyList(),
     val favoriteSize: FavoriteSize = FavoriteSize.LARGE,
+    val favoriteStyle: FavoriteStyle = FavoriteStyle.NAME,
+    /** Fast app icons in the apps' own colours. An app whose time is up stays grey either way. */
+    val colourFavoriteIcons: Boolean = false,
     val showShortcuts: Boolean = true,
     val leftShortcut: String = SHORTCUT_PHONE,
     val rightShortcut: String = SHORTCUT_CAMERA,
@@ -236,6 +244,8 @@ data class Settings(
         put("homeAlign", homeAlign.name)
         put("favorites", JSONArray(favorites))
         put("favoriteSize", favoriteSize.name)
+        put("favoriteStyle", favoriteStyle.name)
+        put("colourFavoriteIcons", colourFavoriteIcons)
         put("showShortcuts", showShortcuts)
         put("leftShortcut", leftShortcut)
         put("rightShortcut", rightShortcut)
@@ -338,6 +348,8 @@ data class Settings(
                 homeAlign = enumOr(o.optString("homeAlign"), d.homeAlign),
                 favorites = o.optJSONArray("favorites").strings().take(MAX_FAVORITES),
                 favoriteSize = enumOr(o.optString("favoriteSize"), d.favoriteSize),
+                favoriteStyle = enumOr(o.optString("favoriteStyle"), d.favoriteStyle),
+                colourFavoriteIcons = o.optBoolean("colourFavoriteIcons", d.colourFavoriteIcons),
                 showShortcuts = o.optBoolean("showShortcuts", d.showShortcuts),
                 leftShortcut = o.optString("leftShortcut", d.leftShortcut),
                 rightShortcut = o.optString("rightShortcut", d.rightShortcut),

@@ -157,6 +157,7 @@
         <item quantity="other">Up to %1$d apps, one tap from the home screen.</item>
     </plurals>
     <!-- Size of the fast apps on the home screen. -->
+    <string name="settings_favorite_style">Show</string>
     <string name="settings_favorite_size">Text size</string>
     <string name="settings_alignment">Alignment</string>
     <string name="settings_corner_shortcuts">Corner shortcuts</string>

@@ -36,6 +36,7 @@ import com.focus.launcher.data.CalendarRepository
 import com.focus.launcher.data.ClockStyle
 import com.focus.launcher.data.DrawerLayout
 import com.focus.launcher.data.FavoriteSize
+import com.focus.launcher.data.FavoriteStyle
 import com.focus.launcher.data.FontChoice
 import com.focus.launcher.data.HomeAlign
 import com.focus.launcher.data.LaunchAnimation
@@ -69,7 +70,7 @@ private fun update(transform: (Settings) -> Settings) = Graph.settings.update(tr
 
 // ---- Home screen -----------------------------------------------------------------------------
 
-private enum class HomeDialog { NONE, CLOCK, SPLIT_SIDE, RING, TAP, TIME_FORMAT, FAVORITE_SIZE, ALIGN, LEFT, RIGHT, CALENDAR, MUSIC_APP, NOTE_APP }
+private enum class HomeDialog { NONE, CLOCK, SPLIT_SIDE, RING, TAP, TIME_FORMAT, FAVORITE_SIZE, FAVORITE_STYLE, ALIGN, LEFT, RIGHT, CALENDAR, MUSIC_APP, NOTE_APP }
 
 @Composable
 internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Unit, go: (String) -> Unit) {
@@ -206,6 +207,18 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             onClick = { go(Routes.FAST_APPS) },
         )
         SettingRow(
+            stringResource(R.string.settings_favorite_style),
+            value = stringResource(settings.favoriteStyle.labelRes),
+            onClick = { dialog = HomeDialog.FAVORITE_STYLE },
+        )
+        // Only an icon has a colour to choose.
+        if (settings.favoriteStyle != FavoriteStyle.NAME) {
+            ToggleRow(
+                stringResource(R.string.settings_colour_icons), settings.colourFavoriteIcons,
+                subtitle = stringResource(R.string.settings_colour_icons_summary),
+            ) { v -> update { it.copy(colourFavoriteIcons = v) } }
+        }
+        SettingRow(
             stringResource(R.string.settings_favorite_size),
             value = stringResource(settings.favoriteSize.labelRes),
             onClick = { dialog = HomeDialog.FAVORITE_SIZE },
@@ -258,6 +271,11 @@ internal fun HomePage(settings: Settings, apps: List<AppEntry>, onBack: () -> Un
             FavoriteSize.entries.map { it to stringResource(it.labelRes) },
             settings.favoriteSize, close,
         ) { v -> update { it.copy(favoriteSize = v) } }
+        HomeDialog.FAVORITE_STYLE -> ChoiceDialog(
+            stringResource(R.string.settings_favorite_style),
+            FavoriteStyle.entries.map { it to stringResource(it.labelRes) },
+            settings.favoriteStyle, close,
+        ) { v -> update { it.copy(favoriteStyle = v) } }
         HomeDialog.ALIGN -> ChoiceDialog(
             stringResource(R.string.settings_alignment),
             HomeAlign.entries.map { it to stringResource(it.labelRes) },

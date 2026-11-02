@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -79,6 +80,7 @@ import com.focus.launcher.data.CalendarRepository
 import com.focus.launcher.data.ClockStyle
 import com.focus.launcher.data.DayUsage
 import com.focus.launcher.data.FAVORITES_PER_COLUMN
+import com.focus.launcher.data.FavoriteStyle
 import com.focus.launcher.data.FontChoice
 import com.focus.launcher.data.SHORTCUT_CAMERA
 import com.focus.launcher.data.SHORTCUT_PHONE
@@ -92,6 +94,7 @@ import com.focus.launcher.data.TAP_SCREEN_TIME
 import com.focus.launcher.data.TimeFormat
 import com.focus.launcher.data.TodoItem
 import com.focus.launcher.service.FocusAccessibilityService
+import com.focus.launcher.ui.components.AppIcon
 import com.focus.launcher.ui.components.AppPickerDialog
 import com.focus.launcher.ui.components.ChoiceDialog
 import com.focus.launcher.ui.components.T
@@ -340,6 +343,8 @@ fun HomeScreen(
         val ring = fit.ring.coerceAtLeast(132.dp)
         val favoriteSize = (fit.textSp * settings.favoriteSize.scale).sp
         val favoritePadding = fit.padDp.dp
+        // As tall as a line of the name, the height heightOf() counts per row, so icons move nothing.
+        val favoriteIcon = (fit.textSp * settings.favoriteSize.scale * 1.2f * textScale).dp
 
         // Behind everything else and under the system bars; draws nothing unless one is chosen.
         HomeWallpaper(settings)
@@ -493,7 +498,7 @@ fun HomeScreen(
                 )
             } else if (favoriteColumns == 1) {
                 for (app in favorites) {
-                    FavoriteRow(app, favoriteSize, favoritePadding, dimmed = app.key in spent, onLaunch, onAppMenu)
+                    FavoriteRow(app, settings, favoriteSize, favoritePadding, favoriteIcon, dimmed = app.key in spent, onLaunch, onAppMenu)
                 }
             } else {
                 // Filled top to bottom: the first half on the left, the rest on the right, so the
@@ -502,7 +507,7 @@ fun HomeScreen(
                     for (column in favorites.chunked((favorites.size + 1) / 2)) {
                         Column(Modifier.weight(1f), horizontalAlignment = settings.homeAlign.horizontal()) {
                             for (app in column) {
-                                FavoriteRow(app, favoriteSize, favoritePadding, dimmed = app.key in spent, onLaunch, onAppMenu)
+                                FavoriteRow(app, settings, favoriteSize, favoritePadding, favoriteIcon, dimmed = app.key in spent, onLaunch, onAppMenu)
                             }
                         }
                     }
@@ -736,34 +741,59 @@ fun shortcutLabel(spec: String, apps: List<AppEntry>): String = when (spec) {
     else -> apps.firstOrNull { it.key == spec }?.label ?: stringResource(R.string.home_not_set)
 }
 
-/** One fast app on the home screen. Faint once its time for today is spent. */
+/**
+ * One fast app on the home screen: its name, its icon or both, as set in [Settings.favoriteStyle].
+ * Faint once its time for today is spent. An app with no icon to show keeps its name instead.
+ */
 @Composable
 private fun FavoriteRow(
     app: AppEntry,
+    settings: Settings,
     size: TextUnit,
     padding: Dp,
+    iconSide: Dp,
     dimmed: Boolean,
     onLaunch: (AppEntry) -> Unit,
     onAppMenu: (AppEntry) -> Unit,
 ) {
-    val c = LocalFocusColors.current
+    val style = settings.favoriteStyle
     Row(
         Modifier
             .press(onLongClick = { onAppMenu(app) }) { onLaunch(app) }
             .padding(vertical = padding, horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        T(
-            app.label,
-            Modifier.weight(1f, fill = false).then(if (hasColourGlyphs(app.label)) Modifier.monochrome() else Modifier),
-            size = size,
-            color = if (dimmed) c.faint else c.fg,
-            weight = FontWeight.Normal,
-            maxLines = 1,
-        )
-        // Same marker as in the drawer, sized with the name next to it.
-        if (app.isWorkProfile) WorkBadge(Modifier.padding(start = 10.dp), side = (size.value * 0.62f).dp)
+        if (style != FavoriteStyle.NAME) {
+            AppIcon(
+                app, iconSide, dimmed, colour = settings.colourFavoriteIcons,
+                // On its own the icon is all a screen reader has to say.
+                contentDescription = if (style == FavoriteStyle.ICON) app.label else null,
+                missing = {
+                    if (style == FavoriteStyle.ICON) FavoriteName(app, Modifier, size, dimmed)
+                    else Spacer(Modifier.size(iconSide)) // keeps the names of a column in line
+                },
+            )
+        }
+        if (style != FavoriteStyle.ICON) {
+            if (style == FavoriteStyle.BOTH) Spacer(Modifier.width(12.dp))
+            FavoriteName(app, Modifier.weight(1f, fill = false), size, dimmed)
+        }
+        // Same marker as in the drawer, sized with the name next to it. An icon carries the system's own.
+        if (app.isWorkProfile && style == FavoriteStyle.NAME) WorkBadge(Modifier.padding(start = 10.dp), side = (size.value * 0.62f).dp)
     }
+}
+
+@Composable
+private fun FavoriteName(app: AppEntry, modifier: Modifier, size: TextUnit, dimmed: Boolean) {
+    val c = LocalFocusColors.current
+    T(
+        app.label,
+        modifier.then(if (hasColourGlyphs(app.label)) Modifier.monochrome() else Modifier),
+        size = size,
+        color = if (dimmed) c.faint else c.fg,
+        weight = FontWeight.Normal,
+        maxLines = 1,
+    )
 }
 
 /** The phone and camera corners are recognised by their shape; any other app keeps its name. */

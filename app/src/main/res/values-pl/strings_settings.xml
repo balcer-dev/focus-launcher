@@ -143,6 +143,7 @@
         <item quantity="many">Do %1$d aplikacji, jedno kliknięcie od ekranu głównego.</item>
         <item quantity="other">Do %1$d aplikacji, jedno kliknięcie od ekranu głównego.</item>
     </plurals>
+    <string name="settings_favorite_style">Pokazuj</string>
     <string name="settings_favorite_size">Rozmiar tekstu</string>
     <string name="settings_alignment">Wyrównanie</string>
     <string name="settings_corner_shortcuts">Skróty w rogach</string>

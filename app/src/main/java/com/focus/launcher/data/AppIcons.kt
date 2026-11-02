@@ -14,7 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * App icons for the optional grid view of the app list; the plain list never asks for one.
+ * App icons for the optional grid view of the app list and for fast apps shown with one; the plain
+ * list never asks for any.
  * Read through [LauncherApps] off the main thread, drawn once at the size shown and kept in
  * memory up to [MAX_BYTES], so scrolling back costs nothing. Nothing is written to disk.
  * Work-profile apps get the system's badged icon, as on the phone's own launcher.

@@ -111,6 +111,14 @@ class SettingsMigrationTest {
         assertEquals(s, Settings.fromJson(s.toJson()))
     }
 
+    @Test fun `fast apps show their names unless icons were chosen`() {
+        assertEquals(FavoriteStyle.NAME, Settings.fromJson(Settings().toJson().apply { remove("favoriteStyle") }).favoriteStyle)
+        assertEquals(FavoriteStyle.NAME, Settings.fromJson(Settings().toJson().put("favoriteStyle", "LOGO")).favoriteStyle)
+        assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("colourFavoriteIcons") }).colourFavoriteIcons)
+        val s = Settings(favoriteStyle = FavoriteStyle.BOTH, colourFavoriteIcons = true)
+        assertEquals(s, Settings.fromJson(s.toJson()))
+    }
+
     @Test fun `search forgives typos only once asked to`() {
         assertEquals(false, Settings.fromJson(Settings().toJson().apply { remove("typoSearch") }).typoSearch)
         val s = Settings(typoSearch = true)

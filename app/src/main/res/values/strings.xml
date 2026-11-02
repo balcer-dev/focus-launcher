@@ -109,6 +109,9 @@
     <string name="favorite_size_small">Small</string>
     <string name="favorite_size_medium">Medium</string>
     <string name="favorite_size_large">Large</string>
+    <string name="favorite_style_name">Name</string>
+    <string name="favorite_style_icon">Icon</string>
+    <string name="favorite_style_both">Icon and name</string>
     <!-- How the app list shows the apps. The grid is the only place with app icons. -->
     <string name="layout_list">List</string>
     <string name="layout_grid">Grid with icons</string>

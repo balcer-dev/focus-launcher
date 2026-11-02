@@ -3,7 +3,6 @@ package com.focus.launcher.ui.drawer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,10 +52,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -74,8 +71,8 @@ import com.focus.launcher.data.DayUsage
 import com.focus.launcher.data.DrawerLayout
 import com.focus.launcher.data.DrawerSort
 import com.focus.launcher.data.Settings
+import com.focus.launcher.ui.components.AppIcon
 import com.focus.launcher.ui.components.ChoiceDialog
-import com.focus.launcher.ui.components.GREYSCALE
 import com.focus.launcher.ui.components.Label
 import com.focus.launcher.ui.components.T
 import com.focus.launcher.ui.components.TabChip
@@ -538,7 +535,13 @@ private fun AppTile(
             .padding(horizontal = 2.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        AppIcon(app, dimmed = spent, colour = settings.colourIcons)
+        // No description: the name is right below. A work app whose icon could not be read gets the list's marker.
+        Box(Modifier.size(ICON_SIZE), contentAlignment = Alignment.Center) {
+            AppIcon(
+                app, ICON_SIZE, dimmed = spent, colour = settings.colourIcons,
+                missing = { if (app.isWorkProfile) WorkBadge(side = 18.dp) },
+            )
+        }
         VSpace(6.dp)
         val name = if (hasColourGlyphs(app.label)) Modifier.fillMaxWidth().monochrome() else Modifier.fillMaxWidth()
         T(app.label, name, size = 13.sp, color = if (spent) c.faint else c.fg, align = TextAlign.Center, maxLines = 1)
@@ -547,40 +550,6 @@ private fun AppTile(
                 stringResource(R.string.drawer_usage_of_limit, formatDuration(res, used), formatMinutes(res, limit.minutes)),
                 Modifier.fillMaxWidth(), size = 11.sp, color = if (spent) c.faint else c.dim, align = TextAlign.Center, maxLines = 1,
             )
-        }
-    }
-}
-
-/**
- * The app's icon, the badged one for a work app, read in the background by [AppIcons]. Grey unless
- * [colour] is on; a [dimmed] one, of an app whose time is up, is grey in any case.
- * Until it arrives, or when there is none, its space stays empty; a work app whose icon could not
- * be read gets the list's work marker there instead.
- */
-@Composable
-private fun AppIcon(app: AppEntry, dimmed: Boolean, colour: Boolean) {
-    val sizePx = with(LocalDensity.current) { ICON_SIZE.roundToPx() }
-    // updatedAt is a key too: an updated app can bring a new icon.
-    var icon by remember(app.key, app.updatedAt, sizePx) { mutableStateOf(Graph.icons.cached(app, sizePx)) }
-    var missing by remember(app.key, app.updatedAt, sizePx) { mutableStateOf(false) }
-    LaunchedEffect(app.key, app.updatedAt, sizePx) {
-        if (icon == null) {
-            val loaded = Graph.icons.load(app, sizePx)
-            if (loaded != null) icon = loaded else missing = true
-        }
-    }
-    Box(Modifier.size(ICON_SIZE), contentAlignment = Alignment.Center) {
-        val bitmap = icon
-        if (bitmap != null) {
-            Image(
-                remember(bitmap) { bitmap.asImageBitmap() },
-                contentDescription = null, // the name is right below it
-                modifier = Modifier.fillMaxSize(),
-                alpha = if (dimmed) 0.35f else 1f,
-                colorFilter = if (colour && !dimmed) null else GREYSCALE,
-            )
-        } else if (missing && app.isWorkProfile) {
-            WorkBadge(side = 18.dp)
         }
     }
 }

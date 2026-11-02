@@ -29,7 +29,7 @@ object Graph {
 
     private val iconsLazy = lazy { AppIcons(app) }
 
-    /** Created on first use: only the optional grid view of the app list loads icons. */
+    /** Created on first use: only the optional grid of the app list and fast apps shown with icons load any. */
     val icons: AppIcons by iconsLazy
 
     /** Empties the icon cache if there is one, without creating it just for that. */

@@ -86,6 +86,9 @@
     <string name="favorite_size_small">Mały</string>
     <string name="favorite_size_medium">Średni</string>
     <string name="favorite_size_large">Duży</string>
+    <string name="favorite_style_name">Nazwa</string>
+    <string name="favorite_style_icon">Ikona</string>
+    <string name="favorite_style_both">Ikona i nazwa</string>
     <string name="layout_list">Lista</string>
     <string name="layout_grid">Siatka z ikonami</string>
 
