@@ -74,6 +74,9 @@ ui/     theme/ components/ home/ drawer/ block/ review/ settings/   + Launching.
 - **`TRIM_MEMORY_UI_HIDDEN` fires on every app launch**; never clear caches there.
 - Compose lint is strict here: no `Locale.getDefault()` or `StateFlow.value` in composables
   (use `currentLocale()` and `collectAsStateWithLifecycle`).
+- **No user-visible text in Kotlin.** All of it lives in `res/values/strings*.xml` (`strings.xml`
+  for services, data and formatting, `strings_<area>.xml` per screen; Polish in `values-pl/`). A new
+  language is one more `values-<qualifier>` folder and no code: see `TRANSLATING.md`.
 
 ## Quality bar
 33 unit tests pass (tracker 13, emoji 6, settings 7, music linger 7; `org.json` is a test-only

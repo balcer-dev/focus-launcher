@@ -125,6 +125,11 @@ shows the wall instead. With it, the wall also comes up mid-session.
 
 The app declares **no INTERNET permission**. Nothing leaves the phone.
 
+## Translations
+
+Focus is in English and Polish, and a new language needs no code: see
+[`TRANSLATING.md`](TRANSLATING.md).
+
 ## Building
 
 Requirements: JDK 17–21 and the Android SDK with platform 36.

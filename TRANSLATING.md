@@ -15,6 +15,10 @@ Every word Focus shows lives in Android string resources, so a new language need
 5. `<plurals>` need every category your language uses (English: `one`, `other`; Polish: `one`,
    `few`, `many`, `other`). The categories are listed in the
    [CLDR plural rules](https://www.unicode.org/cldr/charts/latest/supplemental/language_plural_rules.html).
+   Keep every `<plurals>` entry (a missing one shows the English text) and always give `other`.
+   A missing category shows no error: Android takes `other` instead, so the word comes out in the
+   wrong form. A missing `other` as well crashes the app as soon as a number needs it. Lint
+   (`MissingQuantity`) lists the categories a translation lacks.
 6. `format_*` strings are date patterns in `java.time.format.DateTimeFormatter` syntax. Translate
    them only to change the order or style; month and day names come from the system.
 7. Optional: store listing text in `fastlane/metadata/android/<locale>/`.
